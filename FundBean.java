@@ -1,89 +1,71 @@
-package fundSpider;
+package util;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-/**
- * Created by Administrator on 2016/9/12.
- */
-public class FundBean {
+public class HTMLReader {
+    private Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("63.217.82.140", 8888));
+    private String USER_AGENT = "User-Agent";
+    private String FF_BROWSER = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0)";
+    private String GBK_ENCODE = "gbk";
 
-    String fundCode;
-    String fundName;
-    String createdTime;
-    String fundManager;
-    String fee;
-    String status;
-    String fundUrl;
-    String detailUrl;
-    private List<FundDetail> details = Collections.synchronizedList(new ArrayList<FundDetail>());
-
-    public List<FundDetail> getDetails() {
-        return details;
+    private InputStream getUrlStream(String sUrl) throws IOException {
+        URL url = new URL(sUrl);
+        URLConnection urlconnection = url.openConnection(proxy);
+        urlconnection.addRequestProperty(USER_AGENT, FF_BROWSER);
+        return urlconnection.getInputStream();
     }
 
-    public String getFundCode() {
-        return fundCode;
+    public String readStreamToStr(String sUrl) {
+        StringBuffer sb = new StringBuffer();//sb为爬到的网页内容
+        InputStream is = null;
+        try {
+            is = getUrlStream(sUrl);
+            BufferedReader bReader = new BufferedReader(new InputStreamReader(is, GBK_ENCODE));
+            String rLine;
+            while ((rLine = bReader.readLine()) != null) {
+                sb.append(rLine);
+            }
+            System.out.println("爬网页" + sUrl + "成功, 是由线程" + Thread.currentThread().getName() + "来爬");
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return sb.toString();
     }
 
-    public void setFundCode(String fundCode) {
-        this.fundCode = fundCode;
-    }
+    public List<String> findMatchUrls(String content, String regex, String replaceSignal) {
+        Pattern pt = Pattern.compile(regex);
+        Matcher mt = pt.matcher(content);
+        System.out.println(content);
+        System.out.println(mt);
 
-    public String getFundName() {
-        return fundName;
-    }
+        List<String> urls = new ArrayList<>();
 
-    public void setFundName(String fundName) {
-        this.fundName = fundName;
-    }
+        while (mt.find()) {
+            String url = mt.group().replaceAll(replaceSignal, "");
+            if (url.startsWith("http")) {
+                urls.add(url);
+            }
+        }
 
-    public String getCreatedTime() {
-        return createdTime;
-    }
-
-    public void setCreatedTime(String createdTime) {
-        this.createdTime = createdTime;
-    }
-
-    public String getFundManager() {
-        return fundManager;
-    }
-
-    public void setFundManager(String fundManager) {
-        this.fundManager = fundManager;
-    }
-
-    public String getFee() {
-        return fee;
-    }
-
-    public void setFee(String fee) {
-        this.fee = fee;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getDetailUrl() {
-        return detailUrl;
-    }
-
-    public void setDetailUrl(String detailUrl) {
-        this.detailUrl = detailUrl;
-    }
-
-    public String getFundUrl() {
-        return fundUrl;
-    }
-
-    public void setFundUrl(String fundUrl) {
-        this.fundUrl = fundUrl;
+        return urls;
     }
 }
