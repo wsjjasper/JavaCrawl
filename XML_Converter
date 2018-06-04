@@ -1,4 +1,4 @@
-package XML_Converter.XML_Converter;
+package work;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -33,392 +33,395 @@ import com.opencsv.CSVReader;
 
 public class CsvConverter {
 
-	private static String[] headers;
-	private static Map<String, String[]> validateMap = new HashMap<String, String[]>();
-	private static List<String[]> list = new ArrayList<String[]>();
-	private static boolean noError = true;
-	private static CSVReader reader;
+    private static String[] headers;
+    private static Map<String, String[]> validateMap = new HashMap<String, String[]>();
+    private static List<String[]> list = new ArrayList<String[]>();
+    private static boolean noError = true;
+    private static CSVReader reader;
+    private static int prefixCount = 12;
 
-	private static Map<String, String[]> applicantsIdMap = new HashMap<String, String[]>();
-	private static Map<String, List<String[]>> applicantsNameMap = new HashMap<String, List<String[]>>();
-	private static Map<String, String> assessmentsMap = new HashMap<String, String>();
+    private static Map<String, String[]> applicantsIdMap = new HashMap<String, String[]>();
+    private static Map<String, List<String[]>> applicantsNameMap = new HashMap<String, List<String[]>>();
+    private static Map<String, String> assessmentsMap = new HashMap<String, String>();
 
-	public static void main(String[] args) throws IOException {
-		init();
-		initApplicants();
-		initAssessments();
-		convertToList();
-		writeIntoCsv(noError);
-	}
+    public static void main(String[] args) throws IOException {
+        init();
+        initApplicants();
+        initAssessments();
+        convertToList();
+        writeIntoCsv(noError);
+    }
 
-	private static void convertToList() throws UnsupportedEncodingException, FileNotFoundException {
-		reader = new CSVReader(new InputStreamReader(new FileInputStream("original1.csv"), "gbk"));
-		Iterator<String[]> it = reader.iterator();
-		boolean titleFlag = true;
-		while (it.hasNext()) {
-			String[] nextLine = it.next();
-			String[] validatedLine;
-			if (titleFlag) {
-				validatedLine = nextLine;
-				titleFlag = false;
-			} else {
-				validatedLine = validate(nextLine);
-			}
-			String[] convertedLine = tuncatColumns(validatedLine);
-			list.add(convertedLine);
-		}
-		// Add header
-		list.add(1, headers);
-	}
+    private static void convertToList() throws UnsupportedEncodingException, FileNotFoundException {
+        reader = new CSVReader(new InputStreamReader(new FileInputStream("original1.csv"), "gbk"));
+        Iterator<String[]> it = reader.iterator();
+        boolean titleFlag = true;
+        while (it.hasNext()) {
+            String[] nextLine = it.next();
+            String[] validatedLine;
+            if (titleFlag) {
+                validatedLine = nextLine;
+                titleFlag = false;
+            } else {
+                validatedLine = validate(nextLine);
+            }
+            String[] convertedLine = tuncatColumns(validatedLine);
+            list.add(convertedLine);
+        }
+        // Add header
+        list.add(1, headers);
+    }
 
-	private static String[] tuncatColumns(String[] values) {
-		String[] strs = new String[values.length - 12];
-		for (int i = 0; i < strs.length; i++) {
-			strs[i] = values[i + 12];
-		}
-		return strs;
-	}
+    private static String[] tuncatColumns(String[] values) {
+        String[] strs = new String[values.length - prefixCount];
+        for (int i = 0; i < strs.length; i++) {
+            strs[i] = values[i + prefixCount];
+        }
+        return strs;
+    }
 
-	private static String[] validate(String[] values) {
-		for (int i = 12; i < values.length; i++) {
-			// Clean invalid word to empty
-			values[i] = cleanValue(values[i]);
+    private static String[] validate(String[] values) {
+        for (int i = prefixCount; i < values.length; i++) {
+            // Clean invalid word to empty
+            values[i] = cleanValue(values[i]);
 
-			// Custom validate: start
-			// Fetch SQH number and validate user base info
-			String[] applicatnsArgs = applicantsIdMap.get(values[7]);
-			if (applicatnsArgs == null) {
-				List<String[]> applicatnslist = applicantsNameMap.get(values[13]);
-				if (applicatnslist != null) {
-					// Found only one by name
-					if (applicatnslist.size() == 0) {
-						applicatnsArgs = applicatnslist.get(0);
-						values[7] = applicatnsArgs[5];
-					} else {
-						int matchNum = 0;
-						String[] matchedApplicatnsArgs = null;
-						// Found multiple by name
-						for (String[] args : applicatnslist) {
-							if (args[4].contains(values[29])) {
-								matchedApplicatnsArgs = args;
-								matchNum++;
-							}
-						}
-						if (matchNum == 1) {
-							applicatnsArgs = matchedApplicatnsArgs;
-							values[7] = matchedApplicatnsArgs[5];
-						} else {
-							values[7] = values[7] + "(Error - 系统无法根据姓名，地区，身份证号来确认申请号！)";
-						}
-					}
+            // Custom validate: start
+            // Fetch SQH number and validate user base info
+            String[] applicatnsArgs = applicantsIdMap.get(values[7]);
+            if (applicatnsArgs == null) {
+                List<String[]> applicatnslist = applicantsNameMap.get(values[13]);
+                if (applicatnslist != null) {
+                    // Found only one by name
+                    if (applicatnslist.size() == 0) {
+                        applicatnsArgs = applicatnslist.get(0);
+                        values[7] = applicatnsArgs[5];
+                    } else {
+                        int matchNum = 0;
+                        String[] matchedApplicatnsArgs = null;
+                        // Found multiple by name
+                        for (String[] args : applicatnslist) {
+                            if (args[4].contains(values[29])) {
+                                matchedApplicatnsArgs = args;
+                                matchNum++;
+                            }
+                        }
+                        if (matchNum == 1) {
+                            applicatnsArgs = matchedApplicatnsArgs;
+                            values[7] = matchedApplicatnsArgs[5];
+                        } else {
+                            values[7] = values[7] + "(Error - 系统无法根据姓名，地区，身份证号来确认申请号！)";
+                        }
+                    }
 
-				}
-			}
-			if (i == 12) {
-				if (applicatnsArgs != null) {
-					values[i] = applicatnsArgs[0];
-				}
-				if (StringUtils.isEmpty(values[i])) {
-					values[i] = "(Error - 总表找不到申请号！)";
-					noError = false;
-				}
-			}
-			if (i == 13) {
-				String name = applicatnsArgs == null ? "根据身份证号" + values[7] + "未找到" : applicatnsArgs[1];
-				if (!values[i].equals(name)) {
-					values[i] = values[i] + "(Error - 姓名和总表不匹配！[总表：" + name + "])";
-					noError = false;
-				}
-			}
-			if (i == 14) {
-				String gender = applicatnsArgs == null ? "根据身份证号" + values[7] + "未找到" : applicatnsArgs[2];
-				if (!values[i].equals(gender)) {
-					values[i] = values[i] + "(Error - 性别和总表不匹配！[总表：" + gender + "])";
-					noError = false;
-				}
-			}
-			if (i == 15) {
-				String age = applicatnsArgs == null ? "根据身份证号" + values[7] + "未找到" : applicatnsArgs[3];
-				if (!values[i].equals(age)) {
-					values[i] = values[i] + "(Error - 年龄和总表不匹配！[总表：" + age + "])";
-					noError = false;
-				}
-			}
+                }
+            }
+            if (i == prefixCount) {
+                if (applicatnsArgs != null) {
+                    values[i] = applicatnsArgs[0];
+                }
+                if (StringUtils.isEmpty(values[i])) {
+                    values[i] = "(Error - 总表找不到申请号！)";
+                    noError = false;
+                }
+            }
+            if (i == 13) {
+                String name = applicatnsArgs == null ? "根据身份证号" + values[7] + "未找到" : applicatnsArgs[1];
+                if (!values[i].equals(name)) {
+                    values[i] = values[i] + "(Error - 姓名和总表不匹配！[总表：" + name + "])";
+                    noError = false;
+                }
+            }
+            if (i == 14) {
+                String gender = applicatnsArgs == null ? "根据身份证号" + values[7] + "未找到" : applicatnsArgs[2];
+                if (!values[i].equals(gender)) {
+                    values[i] = values[i] + "(Error - 性别和总表不匹配！[总表：" + gender + "])";
+                    noError = false;
+                }
+            }
+            if (i == 15) {
+                String age = applicatnsArgs == null ? "根据身份证号" + values[7] + "未找到" : applicatnsArgs[3];
+                if (!values[i].equals(age)) {
+                    values[i] = values[i] + "(Error - 年龄和总表不匹配！[总表：" + age + "])";
+                    noError = false;
+                }
+            }
 
-			// Validate assessments
-			// G2
-			if (i == 323) {
-				String assessment = assessmentsMap.get(values[i]);
-				values[i + 1] = cleanValue(values[i + 1]);
-				if (assessment == null || !assessment.equals(values[i + 1])) {
-					values[i] = values[i] + "(Error -  调查员编号和评估人员信息不匹配[评估人员信息表："
-							+ (assessment == null ? "未找到" : assessment) + "])";
-				}
-			}
-			// G5
-			if (i == 326) {
-				String assessment = assessmentsMap.get(values[i]);
-				values[i + 1] = cleanValue(values[i + 1]);
-				if (assessment == null || !assessment.equals(values[i + 1])) {
-					values[i] = values[i] + "(Error -  调查员编号和评估人员信息不匹配[评估人员信息表："
-							+ (assessment == null ? "未找到" : assessment) + "])";
-				}
-			}
+            // Validate assessments
+            // G2
+            if (i == 323) {
+                String assessment = assessmentsMap.get(values[i]);
+                values[i + 1] = cleanValue(values[i + 1]);
+                if (assessment == null || !assessment.equals(values[i + 1])) {
+                    values[i] = values[i] + "(Error -  调查员编号和评估人员信息不匹配[评估人员信息表："
+                            + (assessment == null ? "未找到" : assessment) + "])";
+                }
+            }
+            // G5
+            if (i == 326) {
+                String assessment = assessmentsMap.get(values[i]);
+                values[i + 1] = cleanValue(values[i + 1]);
+                if (assessment == null || !assessment.equals(values[i + 1])) {
+                    values[i] = values[i] + "(Error -  调查员编号和评估人员信息不匹配[评估人员信息表："
+                            + (assessment == null ? "未找到" : assessment) + "])";
+                }
+            }
 
-			// Custom validate: End
+            // Custom validate: End
 
-			// If it has been validated above, then no need check again.
-			if (values[i].contains("Error")) {
-				continue;
-			}
-			// Validate by configuration
-			String[] validaters = validateMap.get(headers[i - 12]);
-			if (validaters != null) {
-				for (String validater : validaters) {
-					if ("Required".equals(validater) && StringUtils.isEmpty(values[i])) {
-						values[i] = values[i] + "(Error - 必填字段不能为空！)";
-						noError = false;
-					}
-					if ("Number".equals(validater) && !isNumeric(values[i])) {
-						values[i] = values[i] + "(Error - 字段需要为数字！)";
-						noError = false;
-					}
-					if ("Date".equals(validater) && !isValidDate(values[i])) {
-						values[i] = values[i] + "(Error - 字段需要为日期YYYYMMDD！)";
-						noError = false;
-					}
-					if ("Depend".equals(validater) && !isValidDepend(validater, values[i], values)) {
-						values[i] = values[i] + "(Error - 当" + validater.substring(6, validater.length())
-								+ "有值时，字段不能为空！)";
-						noError = false;
-					}
-					if (validater.startsWith("Range")) {
-						String rangStr = validater.substring(5, validater.length());
-						if (!rangStr.contains(values[i])) {
-							values[i] = values[i] + "(Error - 字段需要为"
-									+ Arrays.toString(rangStr.split("-")).replaceAll(",", "，") + "！)";
-							noError = false;
-						}
-					}
-				}
-			}
+            // If it has been validated above, then no need check again.
+            if (values[i].contains("Error")) {
+                continue;
+            }
+            // Validate by configuration
+            String[] validaters = validateMap.get(headers[i - prefixCount]);
+            if (validaters != null) {
+                for (String validater : validaters) {
+                    if ("Required".equals(validater) && StringUtils.isEmpty(values[i])) {
+                        values[i] = values[i] + "(Error - 必填字段不能为空！)";
+                        noError = false;
+                    }
+                    if ("Number".equals(validater) && !isNumeric(values[i])) {
+                        values[i] = values[i] + "(Error - 字段需要为数字！)";
+                        noError = false;
+                    }
+                    if ("Date".equals(validater) && !isValidDate(values[i])) {
+                        values[i] = values[i] + "(Error - 字段需要为日期YYYYMMDD！)";
+                        noError = false;
+                    }
+                    if (validater.startsWith("Depend") && !isValidDepend(validater, values[i], values)) {
+                        values[i] = values[i] + "(Error - 当" + validater.substring(6, validater.length())
+                                + "有值时，字段不能为空！)";
+                        noError = false;
+                    }
+                    if (validater.startsWith("Range")) {
+                        String rangStr = validater.substring(5, validater.length());
+                        if (!rangStr.contains(values[i])) {
+                            values[i] = values[i] + "(Error - 字段需要为"
+                                    + Arrays.toString(rangStr.split("-")).replaceAll(",", "，") + "！)";
+                            noError = false;
+                        }
+                    }
+                }
+            }
 
-		}
-		return values;
-	}
+        }
+        return values;
+    }
 
-	private static void init() throws IOException {
-		Properties properties = new Properties();
-		InputStream in = CsvConverter.class.getClassLoader().getResourceAsStream("conf.properties");
-		properties.load(in);
-		String headerStr = properties.getProperty("Header");
-		headers = headerStr.split(",");
-		for (String column : headers) {
-			String columnValidaterStr = properties.getProperty(column);
-			if (columnValidaterStr != null) {
-				String[] columnValidaters = columnValidaterStr.split(";");
-				validateMap.put(column, columnValidaters);
-			}
-		}
-	}
+    private static void init() throws IOException {
+        Properties properties = new Properties();
+//        InputStream in = CsvConverter.class.getClassLoader().getResourceAsStream("C:\\Users\\shujiaw\\JavaTest\\src\\main\\java\\work\\conf.properties");
 
-	private static void initApplicants() throws IOException {
-		Workbook wb = null;
-		Sheet sheet = null;
-		Row row = null;
-		String filePath = "applicants.xlsx";
-		wb = readExcel(filePath);
-		if (wb != null) {
-			sheet = wb.getSheetAt(0);
-			int rownum = sheet.getPhysicalNumberOfRows();
-			// Ignore the title
-			for (int i = 1; i < rownum; i++) {
-				row = sheet.getRow(i);
-				if (row != null) {
-					String assessmentStatus = getCellFormatValue(row.getCell(23));
-					// if ("评估机构已确认".equals(assessmentStatus) ||
-					// "受理完成".equals(assessmentStatus)) {
-					String sqh = getCellFormatValue(row.getCell(0));
-					String name = getCellFormatValue(row.getCell(2));
-					String gender = getCellFormatValue(row.getCell(4)).equals("男") ? "1" : "2";
-					String age = getCellFormatValue(row.getCell(5));
-					String id = getCellFormatValue(row.getCell(6));
-					String district = getCellFormatValue(row.getCell(9));
-					String[] args = new String[6];
-					args[0] = sqh;
-					args[1] = name;
-					args[2] = gender;
-					args[3] = age;
-					args[4] = district;
-					args[5] = id;
-					applicantsIdMap.put(id, args);
-					List<String[]> list = applicantsNameMap.get(name);
-					if (list == null) {
-						list = new ArrayList<String[]>();
+        InputStream inputStream = new FileInputStream("conf.properties");
+        properties.load(inputStream);
+        String headerStr = properties.getProperty("Header");
+        headers = headerStr.split(",");
+        for (String column : headers) {
+            String columnValidaterStr = properties.getProperty(column);
+            if (columnValidaterStr != null) {
+                String[] columnValidaters = columnValidaterStr.split(";");
+                validateMap.put(column, columnValidaters);
+            }
+        }
+    }
 
-					}
-					list.add(args);
-					applicantsNameMap.put(name, list);
-					// }
-				}
-			}
-		}
-	}
+    private static void initApplicants() throws IOException {
+        Workbook wb = null;
+        Sheet sheet = null;
+        Row row = null;
+        String filePath = "applicants.xlsx";
+        wb = readExcel(filePath);
+        if (wb != null) {
+            sheet = wb.getSheetAt(0);
+            int rownum = sheet.getPhysicalNumberOfRows();
+            // Ignore the title
+            for (int i = 1; i < rownum; i++) {
+                row = sheet.getRow(i);
+                if (row != null) {
+                    String assessmentStatus = getCellFormatValue(row.getCell(23));
+                    // if ("评估机构已确认".equals(assessmentStatus) ||
+                    // "受理完成".equals(assessmentStatus)) {
+                    String sqh = getCellFormatValue(row.getCell(0));
+                    String name = getCellFormatValue(row.getCell(2));
+                    String gender = getCellFormatValue(row.getCell(4)).equals("男") ? "1" : "2";
+                    String age = getCellFormatValue(row.getCell(5));
+                    String id = getCellFormatValue(row.getCell(6));
+                    String district = getCellFormatValue(row.getCell(9));
+                    String[] args = new String[6];
+                    args[0] = sqh;
+                    args[1] = name;
+                    args[2] = gender;
+                    args[3] = age;
+                    args[4] = district;
+                    args[5] = id;
+                    applicantsIdMap.put(id, args);
+                    List<String[]> list = applicantsNameMap.get(name);
+                    if (list == null) {
+                        list = new ArrayList<String[]>();
 
-	private static void initAssessments() throws IOException {
-		Workbook wb = null;
-		Sheet sheet = null;
-		Row row = null;
-		String filePath = "assessments.xls";
-		wb = readExcel(filePath);
-		if (wb != null) {
-			// 获取第一个sheet
-			sheet = wb.getSheetAt(0);
-			// 获取最大行数
-			int rownum = sheet.getPhysicalNumberOfRows();
-			// Ignore the title
-			for (int i = 1; i < rownum; i++) {
-				row = sheet.getRow(i);
-				if (row != null) {
-					String id = getCellFormatValue(row.getCell(3));
-					String name = getCellFormatValue(row.getCell(4));
-					assessmentsMap.put(id, name);
-				}
-			}
-		}
-	}
+                    }
+                    list.add(args);
+                    applicantsNameMap.put(name, list);
+                    // }
+                }
+            }
+        }
+    }
 
-	private static void writeIntoCsv(boolean noError) throws IOException, UnsupportedEncodingException {
-		PrintWriter writer = new PrintWriter("source1" + (noError ? ".csv" : "需修改后使用.csv"), "gbk");
-		for (String[] strs : list) {
-			String line = Arrays.toString(strs);
-			writer.println(line.substring(1, line.length() - 1));
-		}
-		writer.close();
-	}
+    private static void initAssessments() throws IOException {
+        Workbook wb = null;
+        Sheet sheet = null;
+        Row row = null;
+        String filePath = "assessments.xls";
+        wb = readExcel(filePath);
+        if (wb != null) {
+            // 获取第一个sheet
+            sheet = wb.getSheetAt(0);
+            // 获取最大行数
+            int rownum = sheet.getPhysicalNumberOfRows();
+            // Ignore the title
+            for (int i = 1; i < rownum; i++) {
+                row = sheet.getRow(i);
+                if (row != null) {
+                    String id = getCellFormatValue(row.getCell(3));
+                    String name = getCellFormatValue(row.getCell(4));
+                    assessmentsMap.put(id, name);
+                }
+            }
+        }
+    }
 
-	private static String cleanValue(String str) {
-		str = str.replace(" ", "");
-		if (str == null || str.trim().equals("") || str.trim().equals("(空)")) {
-			return "";
-		} else if (isNumeric(str.trim()) && Double.valueOf(str.trim()) < 0) {
-			return "";
-		} else {
-			return str.trim();
-		}
+    private static void writeIntoCsv(boolean noError) throws IOException, UnsupportedEncodingException {
+        PrintWriter writer = new PrintWriter("source1" + (noError ? ".csv" : "需修改后使用.csv"), "gbk");
+        for (String[] strs : list) {
+            String line = Arrays.toString(strs);
+            writer.println(line.substring(1, line.length() - 1));
+        }
+        writer.close();
+    }
 
-	}
+    private static String cleanValue(String str) {
+        str = str.replace(" ", "");
+        if (str == null || str.trim().equals("") || str.trim().equals("(空)")) {
+            return "";
+        } else if (isNumeric(str.trim()) && Double.valueOf(str.trim()) < 0) {
+            return "";
+        } else {
+            return str.trim();
+        }
 
-	private static boolean isNumeric(String str) {
-		// 该正则表达式可以匹配所有的数字 包括负数
-		Pattern pattern = Pattern.compile("-?[0-9]+(\\.[0-9]+)?");
-		String bigStr;
-		try {
-			bigStr = new BigDecimal(str).toString();
-		} catch (Exception e) {
-			return false;// 异常 说明包含非数字。
-		}
+    }
 
-		Matcher isNum = pattern.matcher(bigStr); // matcher是全匹配
-		if (!isNum.matches()) {
-			return false;
-		}
-		return true;
-	}
+    private static boolean isNumeric(String str) {
+        // 该正则表达式可以匹配所有的数字 包括负数
+        Pattern pattern = Pattern.compile("-?[0-9]+(\\.[0-9]+)?");
+        String bigStr;
+        try {
+            bigStr = new BigDecimal(str).toString();
+        } catch (Exception e) {
+            return false;// 异常 说明包含非数字。
+        }
 
-	// 读取excel
-	public static Workbook readExcel(String filePath) {
-		Workbook wb = null;
-		if (filePath == null) {
-			return null;
-		}
-		String extString = filePath.substring(filePath.lastIndexOf("."));
-		InputStream is = null;
-		try {
-			is = new FileInputStream(filePath);
-			if (".xls".equals(extString)) {
-				return wb = new HSSFWorkbook(is);
-			} else if (".xlsx".equals(extString)) {
-				return wb = new XSSFWorkbook(is);
-			}
+        Matcher isNum = pattern.matcher(bigStr); // matcher是全匹配
+        if (!isNum.matches()) {
+            return false;
+        }
+        return true;
+    }
 
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return wb;
-	}
+    // 读取excel
+    public static Workbook readExcel(String filePath) {
+        Workbook wb = null;
+        if (filePath == null) {
+            return null;
+        }
+        String extString = filePath.substring(filePath.lastIndexOf("."));
+        InputStream is = null;
+        try {
+            is = new FileInputStream(filePath);
+            if (".xls".equals(extString)) {
+                return wb = new HSSFWorkbook(is);
+            } else if (".xlsx".equals(extString)) {
+                return wb = new XSSFWorkbook(is);
+            }
 
-	@SuppressWarnings("deprecation")
-	public static String getCellFormatValue(Cell cell) {
-		Object cellValue = null;
-		if (cell != null) {
-			// 判断cell类型
-			switch (cell.getCellType()) {
-			case Cell.CELL_TYPE_NUMERIC: {
-				cellValue = String.valueOf(cell.getNumericCellValue());
-				break;
-			}
-			case Cell.CELL_TYPE_FORMULA: {
-				// 判断cell是否为日期格式
-				if (DateUtil.isCellDateFormatted(cell)) {
-					// 转换为日期格式YYYY-mm-dd
-					cellValue = cell.getDateCellValue();
-				} else {
-					// 数字
-					cellValue = String.valueOf(cell.getNumericCellValue());
-				}
-				break;
-			}
-			case Cell.CELL_TYPE_STRING: {
-				cellValue = cell.getRichStringCellValue().getString();
-				break;
-			}
-			default:
-				cellValue = "";
-			}
-		} else {
-			cellValue = "";
-		}
-		return ((String) cellValue).trim();
-	}
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return wb;
+    }
 
-	public static boolean isValidDate(String str) {
-		boolean convertSuccess = true;
-		SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
-		try {
-			format.setLenient(false);
-			format.parse(str);
-		} catch (ParseException e) {
-			convertSuccess = false;
-		}
-		return convertSuccess;
-	}
+    @SuppressWarnings("deprecation")
+    public static String getCellFormatValue(Cell cell) {
+        Object cellValue = null;
+        if (cell != null) {
+            // 判断cell类型
+            switch (cell.getCellType()) {
+                case Cell.CELL_TYPE_NUMERIC: {
+                    cellValue = String.valueOf(cell.getNumericCellValue());
+                    break;
+                }
+                case Cell.CELL_TYPE_FORMULA: {
+                    // 判断cell是否为日期格式
+                    if (DateUtil.isCellDateFormatted(cell)) {
+                        // 转换为日期格式YYYY-mm-dd
+                        cellValue = cell.getDateCellValue();
+                    } else {
+                        // 数字
+                        cellValue = String.valueOf(cell.getNumericCellValue());
+                    }
+                    break;
+                }
+                case Cell.CELL_TYPE_STRING: {
+                    cellValue = cell.getRichStringCellValue().getString();
+                    break;
+                }
+                default:
+                    cellValue = "";
+            }
+        } else {
+            cellValue = "";
+        }
+        return ((String) cellValue).trim();
+    }
 
-	public static boolean isValidDepend(String validater, String str, String[] values) {
-		if (StringUtils.isEmpty(str)) {
-			String paramStr = validater.substring(6, validater.length());
-			String[] params = {};
-			if (validater.contains("=")) {
-				params = paramStr.split("=");
+    public static boolean isValidDate(String str) {
+        boolean convertSuccess = true;
+        SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
+        try {
+            format.setLenient(false);
+            format.parse(str);
+        } catch (ParseException e) {
+            convertSuccess = false;
+        }
+        return convertSuccess;
+    }
 
-			} else if (validater.contains("in")) {
-				params = paramStr.split("in");
-			}
-			if (params[1].contains(values[getHeaderIndex(params[0])])) {
-				return false;
-			}
-		}
-		return true;
-	}
+    public static boolean isValidDepend(String validater, String str, String[] values) {
+        if (StringUtils.isEmpty(str)) {
+            String paramStr = validater.substring(6, validater.length());
+            String[] params = {};
+            if (validater.contains("=")) {
+                params = paramStr.split("=");
 
-	private static int getHeaderIndex(String header) {
-		for (int i = 0; i < headers.length; i++) {
-			if (header.equals(headers[i])) {
-				return i;
-			}
-		}
-		throw new RuntimeException("配置文件有问题：" + header);
-	}
+            } else if (validater.contains("in")) {
+                params = paramStr.split("in");
+            }
+            if (params[1].contains(values[getHeaderIndex(params[0]) + prefixCount])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static int getHeaderIndex(String header) {
+        for (int i = 0; i < headers.length; i++) {
+            if (header.equals(headers[i])) {
+                return i;
+            }
+        }
+        throw new RuntimeException("配置文件有问题：" + header);
+    }
 }
