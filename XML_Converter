@@ -53,7 +53,7 @@ public class CsvConverter {
     }
 
     private static void convertToList() throws UnsupportedEncodingException, FileNotFoundException {
-        reader = new CSVReader(new InputStreamReader(new FileInputStream("original1.csv"), "gbk"));
+        reader = new CSVReader(new InputStreamReader(new FileInputStream("original.csv"), "gbk"));
         Iterator<String[]> it = reader.iterator();
         boolean titleFlag = true;
         while (it.hasNext()) {
@@ -239,30 +239,30 @@ public class CsvConverter {
                 row = sheet.getRow(i);
                 if (row != null) {
                     String assessmentStatus = getCellFormatValue(row.getCell(23));
-                    // if ("评估机构已确认".equals(assessmentStatus) ||
-                    // "受理完成".equals(assessmentStatus)) {
-                    String sqh = getCellFormatValue(row.getCell(0));
-                    String name = getCellFormatValue(row.getCell(2));
-                    String gender = getCellFormatValue(row.getCell(4)).equals("男") ? "1" : "2";
-                    String age = getCellFormatValue(row.getCell(5));
-                    String id = getCellFormatValue(row.getCell(6));
-                    String district = getCellFormatValue(row.getCell(9));
-                    String[] args = new String[6];
-                    args[0] = sqh;
-                    args[1] = name;
-                    args[2] = gender;
-                    args[3] = age;
-                    args[4] = district;
-                    args[5] = id;
-                    applicantsIdMap.put(id, args);
-                    List<String[]> list = applicantsNameMap.get(name);
-                    if (list == null) {
-                        list = new ArrayList<String[]>();
+                    if ("评估机构已确认".equals(assessmentStatus) ||
+                            "受理完成".equals(assessmentStatus)) {
+                        String sqh = getCellFormatValue(row.getCell(0));
+                        String name = getCellFormatValue(row.getCell(2));
+                        String gender = getCellFormatValue(row.getCell(4)).equals("男") ? "1" : "2";
+                        String age = getCellFormatValue(row.getCell(5));
+                        String id = getCellFormatValue(row.getCell(6));
+                        String district = getCellFormatValue(row.getCell(9));
+                        String[] args = new String[6];
+                        args[0] = sqh;
+                        args[1] = name;
+                        args[2] = gender;
+                        args[3] = age;
+                        args[4] = district;
+                        args[5] = id;
+                        applicantsIdMap.put(id, args);
+                        List<String[]> list = applicantsNameMap.get(name);
+                        if (list == null) {
+                            list = new ArrayList<String[]>();
 
+                        }
+                        list.add(args);
+                        applicantsNameMap.put(name, list);
                     }
-                    list.add(args);
-                    applicantsNameMap.put(name, list);
-                    // }
                 }
             }
         }
