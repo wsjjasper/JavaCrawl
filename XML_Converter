@@ -27,6 +27,7 @@ import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.util.StringUtil;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.opencsv.CSVReader;
@@ -81,6 +82,14 @@ public class CsvConverter {
     }
 
     private static String[] validate(String[] values) {
+        //List all JBXX cells
+        List<Integer> jbList = new ArrayList();
+        for (int j = 1; j <= 10; j++) {
+            String numStr = String.format("%02d", j);
+            int num = getHeaderIndex("JB" + numStr) + prefixCount;
+            jbList.add(num);
+        }
+
         for (int i = prefixCount; i < values.length; i++) {
             // Clean invalid word to empty
             values[i] = cleanValue(values[i]);
@@ -95,22 +104,25 @@ public class CsvConverter {
                     if (applicatnslist.size() == 0) {
                         applicatnsArgs = applicatnslist.get(0);
                         values[7] = applicatnsArgs[5];
-                    } else {
+                    } else if (applicatnslist.size() > 1) {
                         int matchNum = 0;
-                        String[] matchedApplicatnsArgs = null;
+                        String[] matchedApplicantsArgs = null;
                         // Found multiple by name
                         for (String[] args : applicatnslist) {
                             if (args[4].contains(values[29])) {
-                                matchedApplicatnsArgs = args;
+                                matchedApplicantsArgs = args;
                                 matchNum++;
                             }
                         }
                         if (matchNum == 1) {
-                            applicatnsArgs = matchedApplicatnsArgs;
-                            values[7] = matchedApplicatnsArgs[5];
+                            applicatnsArgs = matchedApplicantsArgs;
+                            values[7] = matchedApplicantsArgs[5];
                         } else {
-                            values[7] = values[7] + "(Error - 系统无法根据姓名，地区，身份证号来确认申请号！)";
+                            values[7] = values[7] + "(Error - 有多位同名者，并且系统无法根据姓名，地区，身份证号来自动判断申请号！)";
                         }
+                    } else {
+                        applicatnsArgs = applicatnslist.get(0);
+                        values[7] = applicatnsArgs[5];
                     }
 
                 }
@@ -124,27 +136,27 @@ public class CsvConverter {
                     noError = false;
                 }
             }
-            if (i == 13) {
-                String name = applicatnsArgs == null ? "根据身份证号" + values[7] + "未找到" : applicatnsArgs[1];
-                if (!values[i].equals(name)) {
-                    values[i] = values[i] + "(Error - 姓名和总表不匹配！[总表：" + name + "])";
-                    noError = false;
-                }
-            }
-            if (i == 14) {
-                String gender = applicatnsArgs == null ? "根据身份证号" + values[7] + "未找到" : applicatnsArgs[2];
-                if (!values[i].equals(gender)) {
-                    values[i] = values[i] + "(Error - 性别和总表不匹配！[总表：" + gender + "])";
-                    noError = false;
-                }
-            }
-            if (i == 15) {
-                String age = applicatnsArgs == null ? "根据身份证号" + values[7] + "未找到" : applicatnsArgs[3];
-                if (!values[i].equals(age)) {
-                    values[i] = values[i] + "(Error - 年龄和总表不匹配！[总表：" + age + "])";
-                    noError = false;
-                }
-            }
+//            if (i == 13) {
+//                String name = applicatnsArgs == null ? "根据姓名和身份证号" + values[7] + "未找到" : applicatnsArgs[1];
+//                if (!values[i].equals(name)) {
+//                    values[i] = values[i] + "(Error - 姓名和总表不匹配！[总表：" + name + "])";
+//                    noError = false;
+//                }
+//            }
+//            if (i == 14) {
+//                String gender = applicatnsArgs == null ? "根据身份证号" + values[7] + "未找到" : applicatnsArgs[2];
+//                if (!values[i].equals(gender)) {
+//                    values[i] = values[i] + "(Error - 性别和总表不匹配！[总表：" + gender + "])";
+//                    noError = false;
+//                }
+//            }
+//            if (i == 15) {
+//                String age = applicatnsArgs == null ? "根据身份证号" + values[7] + "未找到" : applicatnsArgs[3];
+//                if (!values[i].equals(age)) {
+//                    values[i] = values[i] + "(Error - 年龄和总表不匹配！[总表：" + age + "])";
+//                    noError = false;
+//                }
+//            }
 
             // Validate assessments
             // G2
@@ -165,6 +177,28 @@ public class CsvConverter {
                             + (assessment == null ? "未找到" : assessment) + "])";
                 }
             }
+
+            //Convert A16B
+            int index = getHeaderIndex("A16B") + prefixCount;
+            if (i == index) {
+                if (!StringUtils.isEmpty(values[index]) && "2".equals(values[index - 1])) {
+                    values[index] = "崇明话";
+                }
+            }
+
+            //Convert JBXX 0 to empty
+            if(jbList.contains(i)){
+                if ("0".equals(values[i])) {
+                    values[i] = "";
+                }
+            }
+
+            //Convert A28A, A28B, A29A, A29B, A29C 0 to empty
+            convertEmptyToZero(i, "A28A", values);
+            convertEmptyToZero(i, "A28B", values);
+            convertEmptyToZero(i, "A29A", values);
+            convertEmptyToZero(i, "A29B", values);
+            convertEmptyToZero(i, "A29C", values);
 
             // Custom validate: End
 
@@ -208,6 +242,13 @@ public class CsvConverter {
         return values;
     }
 
+    private static void convertEmptyToZero(int i, String header, String[] values){
+        if(i == (getHeaderIndex(header) + prefixCount)){
+            if (StringUtils.isEmpty(values[i])) {
+                values[i] = "0";
+            }
+        }
+    }
     private static void init() throws IOException {
         Properties properties = new Properties();
 //        InputStream in = CsvConverter.class.getClassLoader().getResourceAsStream("C:\\Users\\shujiaw\\JavaTest\\src\\main\\java\\work\\conf.properties");
@@ -301,7 +342,7 @@ public class CsvConverter {
     }
 
     private static String cleanValue(String str) {
-        str = str.replace(" ", "");
+        str = StringUtils.deleteWhitespace(str);
         if (str == null || str.trim().equals("") || str.trim().equals("(空)")) {
             return "";
         } else if (isNumeric(str.trim()) && Double.valueOf(str.trim()) < 0) {
@@ -409,7 +450,7 @@ public class CsvConverter {
             } else if (validater.contains("in")) {
                 params = paramStr.split("in");
             }
-            if (params[1].contains(values[getHeaderIndex(params[0]) + prefixCount])) {
+            if (!StringUtils.isEmpty(values[getHeaderIndex(params[0]) + prefixCount]) && params[1].contains(values[getHeaderIndex(params[0]) + prefixCount])) {
                 return false;
             }
         }
