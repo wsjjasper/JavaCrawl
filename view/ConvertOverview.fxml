@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane prefHeight="300.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="shujiaw.MainApp">
+    <children>
+        <SplitPane dividerPositions="0.4882943143812709" focusTraversable="true" layoutX="183.0" layoutY="76.0" prefHeight="350.0" prefWidth="600.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <items>
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="298.0" prefWidth="394.0">
+                    <children>
+                        <Label layoutX="7.0" layoutY="6.0" text="[问卷星文件转换]" AnchorPane.leftAnchor="5.0" AnchorPane.topAnchor="5.0">
+                     <font>
+                        <Font name="System Bold" size="15.0" />
+                     </font></Label>
+                        <GridPane layoutX="14.0" layoutY="33.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="30.0">
+                            <columnConstraints>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="206.0" minWidth="10.0" prefWidth="174.0" />
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="132.0" minWidth="10.0" prefWidth="105.0" />
+                            </columnConstraints>
+                            <rowConstraints>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                            </rowConstraints>
+                            <children>
+                                <Label fx:id="wenJuanXinFileName" text="未选择" />
+                                <Label fx:id="applicationFileName" text="未选择" GridPane.rowIndex="1" />
+                                <Label fx:id="assessmentFileName" text="未选择" GridPane.rowIndex="2" />
+                                <Button mnemonicParsing="false" onAction="#selectWenJuanXinButtonAction" prefHeight="25.0" prefWidth="106.0" text="选择问卷星文件" GridPane.columnIndex="1" />
+                                <Button mnemonicParsing="false" onAction="#selectApplicationButtonAction" prefHeight="25.0" prefWidth="106.0" text="选择总表" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                <Button mnemonicParsing="false" onAction="#selectAssessmentButtonAction" prefHeight="25.0" prefWidth="106.0" text="选择评估表" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                            </children>
+                        </GridPane>
+                        <HBox layoutX="215.0" layoutY="259.0" spacing="5.0" AnchorPane.bottomAnchor="10.0" AnchorPane.rightAnchor="10.0" />
+                          <Button layoutX="59.0" layoutY="210.0" mnemonicParsing="false" onAction="#startConversionButtonAction" prefHeight="66.0" prefWidth="172.0" text="开始转换" />
+                    </children>
+                </AnchorPane>
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="298.0" prefWidth="394.0">
+                    <children>
+                        <Label layoutX="7.0" layoutY="6.0" text="[生成XML文件]" AnchorPane.leftAnchor="5.0" AnchorPane.topAnchor="5.0">
+                     <font>
+                        <Font name="System Bold" size="15.0" />
+                     </font></Label>
+                        <GridPane layoutX="14.0" layoutY="33.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="30.0">
+                            <columnConstraints>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="169.0" minWidth="10.0" prefWidth="169.0" />
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="140.0" minWidth="10.0" prefWidth="124.0" />
+                            </columnConstraints>
+                            <rowConstraints>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                            </rowConstraints>
+                            <children>
+                                <Label fx:id="updatedFileName" text="未选择" />
+                                <Button mnemonicParsing="false" onAction="#selectUpdatedFileButtonAction" prefHeight="25.0" prefWidth="125.0" text="选择修订后的文件" GridPane.columnIndex="1" />
+                            </children>
+                        </GridPane>
+                        <HBox layoutX="215.0" layoutY="259.0" spacing="5.0" AnchorPane.bottomAnchor="10.0" AnchorPane.rightAnchor="10.0" />
+                          <Button layoutX="66.0" layoutY="210.0" mnemonicParsing="false" onAction="#startGenerationButtonAction" prefHeight="66.0" prefWidth="172.0" text="开始生成" />
+                    </children>
+                </AnchorPane>
+            </items>
+        </SplitPane>
+    </children>
+</AnchorPane>
