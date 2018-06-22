@@ -317,7 +317,7 @@ public class CsvConverter {
         String fileName = noError ? "修订后的文件.csv" : "需修改后使用.csv";
         PrintWriter writer = new PrintWriter(fileName, "gbk");
         for (String[] strs : list) {
-            String line = Arrays.toString(strs);
+            String line = Arrays.toString(strs).replace(" ","");
             writer.println(line.substring(1, line.length() - 1));
         }
         writer.close();
