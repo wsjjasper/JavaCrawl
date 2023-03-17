@@ -34,3 +34,41 @@ schedule_interval = dag_config["schedule_interval"]
 tasks_config = dag_config["tasks"]
 
 dag = generate_dag(dag_id, default_args, schedule_interval, tasks_config)
+
+
+
+
+
+
+
+
+dag:
+  dag_id: my_dag
+  description: "A dynamic DAG generated from YAML"
+  schedule_interval: "@daily"
+  start_date: "2022-01-01"
+  catchup: false
+
+tasks:
+  - task_id: task_1
+    bash_command: "echo 'Hello, world!'"
+    retries: 3
+
+  - task_id: task_2
+    bash_command: "echo 'This is task 2'"
+    retries: 2
+    depends_on_past: true
+    wait_for_downstream: true
+
+  - task_id: task_3
+    bash_command: "echo 'This is task 3'"
+    retries: 1
+    depends_on_past: true
+    wait_for_downstream: true
+    priority_weight: 2
+
+  # Define the dependencies between tasks
+dependencies:
+  - { source: task_1, target: task_2 }
+  - { source: task_1, target: task_3 }
+  - { source: task_2, target: task_3 }
