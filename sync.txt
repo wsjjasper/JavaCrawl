@@ -67,3 +67,22 @@ tasks:
 dependencies:
   - { source: print_date, target: print_hello }
   - { source: print_hello, target: print_goodbye }
+
+
+以下是一个示例代码，它读取多个YAML文件并将它们合并到一个对象中：
+
+python
+Copy code
+import os
+import yaml
+
+def merge_yaml_files(folder_path):
+    data = {}
+    for filename in os.listdir(folder_path):
+        if filename.endswith('.yaml'):
+            with open(os.path.join(folder_path, filename), 'r') as f:
+                yaml_data = yaml.safe_load(f)
+                for key, value in yaml_data.items():
+                    data.setdefault(key, {})
+                    data[key].update(value)
+    return data
