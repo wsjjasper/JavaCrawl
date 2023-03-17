@@ -1,39 +1,38 @@
-from datetime import datetime
-from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
+import datetime
 import yaml
+from airflow import DAG
+from airflow.operators.bash_operator import BashOperator
 
-def generate_dag(dag_id, default_args, schedule_interval, tasks_config):
-    dag = DAG(
-        dag_id=dag_id,
-        default_args=default_args,
-        schedule_interval=schedule_interval,
-        catchup=False
-    )
-
-    for task_id, task_config in tasks_config.items():
-        operator = PythonOperator(
-            task_id=task_id,
-            python_callable=task_config["python_callable"],
-            op_kwargs=task_config.get("op_kwargs", {}),
-            dag=dag
-        )
-
-        if "dependencies" in task_config:
-            for dep_task_id in task_config["dependencies"]:
-                dag.set_dependency(dep_task_id, task_id)
-
-    return dag
-
-with open("dag_config.yaml", "r") as f:
+# Load the YAML configuration file
+with open('example.yaml') as f:
     dag_config = yaml.safe_load(f)
 
-dag_id = dag_config["dag_id"]
-default_args = dag_config["default_args"]
-schedule_interval = dag_config["schedule_interval"]
-tasks_config = dag_config["tasks"]
+# Extract the DAG configuration from the YAML file
+dag_id = dag_config['dag']['dag_id']
+description = dag_config['dag']['description']
+schedule_interval = dag_config['dag']['schedule_interval']
+start_date = datetime.datetime.strptime(dag_config['dag']['start_date'], '%Y-%m-%d')
+catchup = dag_config['dag']['catchup']
 
-dag = generate_dag(dag_id, default_args, schedule_interval, tasks_config)
+# Create the DAG object
+dag = DAG(dag_id=dag_id, description=description, schedule_interval=schedule_interval,
+          start_date=start_date, catchup=catchup)
+
+# Define the tasks
+tasks = {}
+for task_config in dag_config['tasks']:
+    task_id = task_config['task_id']
+    bash_command = task_config['bash_command']
+    retries = task_config.get('retries', 0)
+    tasks[task_id] = BashOperator(task_id=task_id, bash_command=bash_command,
+                                   retries=retries, dag=dag)
+
+# Define the dependencies between tasks
+for dep_config in dag_config['dependencies']:
+    source_task = tasks[dep_config['source']]
+    target_task = tasks[dep_config['target']]
+    source_task >> target_task
+
 
 
 
@@ -50,25 +49,21 @@ dag:
   catchup: false
 
 tasks:
-  - task_id: task_1
-    bash_command: "echo 'Hello, world!'"
+  - task_id: print_date
+    bash_command: "date"
     retries: 3
 
-  - task_id: task_2
-    bash_command: "echo 'This is task 2'"
+  - task_id: print_hello
+    bash_command: "echo 'Hello, World!'"
     retries: 2
     depends_on_past: true
-    wait_for_downstream: true
 
-  - task_id: task_3
-    bash_command: "echo 'This is task 3'"
+  - task_id: print_goodbye
+    bash_command: "echo 'Goodbye, World!'"
     retries: 1
     depends_on_past: true
-    wait_for_downstream: true
     priority_weight: 2
 
-  # Define the dependencies between tasks
 dependencies:
-  - { source: task_1, target: task_2 }
-  - { source: task_1, target: task_3 }
-  - { source: task_2, target: task_3 }
+  - { source: print_date, target: print_hello }
+  - { source: print_hello, target: print_goodbye }
