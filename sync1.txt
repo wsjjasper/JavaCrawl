@@ -49,3 +49,81 @@ print_params_task = BashOperator(
          'RUN_REQUEST_NAME': "{{ dag_run.conf['runRequestName'] }}"},
     dag=dag,
 )
+
+在Airflow中，任务之间的一种常见方法来传递参数是使用XCom（Cross-Communication）。
+
+以下是一个使用PythonOperator的示例，其中任务task_1通过XCom传递一个参数给任务task_2：
+
+python
+Copy code
+from datetime import datetime
+from airflow import DAG
+from airflow.operators.python_operator import PythonOperator
+
+def set_xcom_value(**kwargs):
+    kwargs['ti'].xcom_push(key='example_key', value='example_value')
+
+def get_xcom_value(**kwargs):
+    value = kwargs['ti'].xcom_pull(key='example_key', task_ids='task_1')
+    print(f"Received XCom value from task_1: {value}")
+
+dag = DAG(
+    'example_dag',
+    default_args={'owner': 'airflow'},
+    schedule_interval=None,
+    start_date=datetime(2023, 3, 23),
+)
+
+task_1 = PythonOperator(
+    task_id='task_1',
+    python_callable=set_xcom_value,
+    provide_context=True,
+    dag=dag,
+)
+
+task_2 = PythonOperator(
+    task_id='task_2',
+    python_callable=get_xcom_value,
+    provide_context=True,
+    dag=dag,
+)
+
+task_1 >> task_2
+在这个示例中，我们有两个任务：task_1和task_2。任务task_1的set_xcom_value函数将一个键值对推送到XCom。任务task_2的get_xcom_value函数从XCom中提取该键值对，并打印它。
+
+注意，你需要将provide_context=True设置为PythonOperator，以便在你的Python函数中访问任务实例（ti）。
+
+对于BashOperator，你可以将值保存到XCom中，然后在另一个任务中使用xcom_pull宏获取该值。这是一个使用BashOperator的示例：
+
+python
+Copy code
+from datetime import datetime
+from airflow import DAG
+from airflow.operators.bash_operator import BashOperator
+
+dag = DAG(
+    'example_dag',
+    default_args={'owner': 'airflow'},
+    schedule_interval=None,
+    start_date=datetime(2023, 3, 23),
+)
+
+task_1 = BashOperator(
+    task_id='task_1',
+    bash_command='echo "example_value" > /tmp/output.txt',
+    dag=dag,
+)
+
+task_2 = BashOperator(
+    task_id='task_2',
+    bash_command='echo "Received value from task_1: {{ ti.xcom_pull(task_ids="task_1", key="return_value") }}"',
+    dag=dag,
+)
+
+task_1 >> task_2
+在这个示例中，任务task_1将一个值保存到/tmp/output.txt文件中。任务task_2使用ti.xcom_pull宏从任务task_1中提取该值，并将其打印出来。请注意，BashOperator会将命令的输出（除非指定output_encoding）自动保存到XCom中，键为return_value。
+
+
+
+
+
