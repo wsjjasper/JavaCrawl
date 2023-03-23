@@ -27,3 +27,25 @@ print_params_task = PythonOperator(
     provide_context=True,
     dag=dag,
 )
+
+
+from datetime import datetime
+from airflow import DAG
+from airflow.operators.bash_operator import BashOperator
+
+dag = DAG(
+    'example_dag',
+    default_args={'owner': 'airflow'},
+    schedule_interval=None,
+    start_date=datetime(2023, 3, 23),
+)
+
+print_params_task = BashOperator(
+    task_id='print_params',
+    bash_command='bash /path/to/print_params.sh',
+    env={'RUN_REQUEST_ID': "{{ dag_run.conf['runRequestId'] }}",
+         'RUN_REQUEST_TYPE': "{{ dag_run.conf['runRequestType'] }}",
+         'COB_DATE_KEY': "{{ dag_run.conf['cobDateKey'] }}",
+         'RUN_REQUEST_NAME': "{{ dag_run.conf['runRequestName'] }}"},
+    dag=dag,
+)
