@@ -1,0 +1,33 @@
+Summary of Parameter Passing Approaches in Airflow 2.0+
+
+Between Tasks within a DAG:
+
+a. XCom: Task instances can push and pull messages using the xcom_push and xcom_pull methods, allowing tasks to share data. XComs are typically used for small amounts of data and are stored in the Airflow metadata database.
+
+Between DAGs:
+
+a. TriggerDagRunOperator: Use the TriggerDagRunOperator to trigger a child DAG from a parent DAG. You can pass configuration data to the child DAG using the conf parameter, which should be a dictionary containing the key-value pairs you want to pass.
+
+b. ExternalTaskSensor: If you need to make a child DAG wait for the successful completion of a parent DAG, use the ExternalTaskSensor in the child DAG to wait for the specific task or tasks in the parent DAG to finish successfully.
+
+From the Command Line to a DAG:
+
+a. Default Arguments: Pass parameters to a DAG by setting default arguments. These parameters can then be accessed by tasks within the DAG using the params attribute.
+
+json
+Copy code
+ Example command:
+ ```
+ airflow dags trigger example_dag --conf '{"param1": "value1", "param2": "value2"}'
+ ```
+From Task to Task within a DAG:
+
+a. XCom: As mentioned earlier, tasks can push and pull messages using the xcom_push and xcom_pull methods. This enables sharing data between tasks in the same DAG.
+
+From an External Source to a DAG or Task:
+
+a. Variables: Use Airflow Variables to store and retrieve configuration data. Variables can be created and managed in the Airflow UI, CLI, or REST API. Tasks can access variables using the Variable.get method.
+
+b. Connections: Store sensitive information like credentials and connection strings in Airflow Connections. Connections can be created and managed in the Airflow UI, CLI, or REST API. Tasks can access connections using the BaseHook.get_connection method.
+
+This report summarizes the parameter passing approaches in Airflow 2.0+ for sharing data and configuration between tasks and DAGs. The methods include XComs, TriggerDagRunOperator, ExternalTaskSensor, default arguments, Variables, and Connections.
