@@ -109,7 +109,7 @@ class CustomExternalTaskSensor(ExternalTaskSensor):
             )
 
             if self.external_task_id:
-                query = query.filter(DagRun.external_task_id == self.external_task_id)
+                query = query = query.filter(DagRun.run_id.like(f"%{self.external_task_id}%"))
 
             if query.count() > 0:
                 return True
