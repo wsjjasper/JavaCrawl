@@ -122,8 +122,8 @@ task_2 = BashOperator(
 
 task_1 >> task_2
 在这个示例中，任务task_1将一个值保存到/tmp/output.txt文件中。任务task_2使用ti.xcom_pull宏从任务task_1中提取该值，并将其打印出来。请注意，BashOperator会将命令的输出（除非指定output_encoding）自动保存到XCom中，键为return_value。
-
 str="abc 1 def 12345 Return - status = 0"
-number=$(echo $str | grep -o -P '(?<=def ).*(?= Return)' | sed 's/ //g')
+number=$(echo $str | grep -o -P '[0-9]+(?= Return)')
+echo $number
 
 
