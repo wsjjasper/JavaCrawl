@@ -127,3 +127,88 @@ number=$(echo $str | grep -o -P '[0-9]+(?= Return)')
 echo $number
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.bpmn.instance.*;
+
+import java.io.File;
+import java.io.IOException;
+
+public class CreateBPMNFile {
+
+  public static void main(String[] args) {
+    // Create an empty BPMN model
+    BpmnModelInstance modelInstance = Bpmn.createEmptyModel();
+    Definitions definitions = modelInstance.newInstance(Definitions.class);
+    definitions.setTargetNamespace("http://camunda.org/examples");
+    modelInstance.setDefinitions(definitions);
+
+    // Create a process and add it to the model
+    Process process = modelInstance.newInstance(Process.class);
+    process.setId("process");
+    definitions.addChildElement(process);
+
+    // Create and add start event to the process
+    StartEvent startEvent = modelInstance.newInstance(StartEvent.class);
+    startEvent.setId("startEvent");
+    process.addChildElement(startEvent);
+
+    // Create and add task1 to the process
+    Task task1 = modelInstance.newInstance(Task.class);
+    task1.setId("task1");
+    task1.setName("Task 1");
+    process.addChildElement(task1);
+
+    // Create and add task2 to the process
+    Task task2 = modelInstance.newInstance(Task.class);
+    task2.setId("task2");
+    task2.setName("Task 2");
+    process.addChildElement(task2);
+
+    // Create and add end event to the process
+    EndEvent endEvent = modelInstance.newInstance(EndEvent.class);
+    endEvent.setId("endEvent");
+    process.addChildElement(endEvent);
+
+    // Create and add sequence flows
+    SequenceFlow flow1 = createSequenceFlow(modelInstance, "flow1", startEvent, task1);
+    SequenceFlow flow2 = createSequenceFlow(modelInstance, "flow2", task1, task2);
+    SequenceFlow flow3 = createSequenceFlow(modelInstance, "flow3", task2, endEvent);
+
+    // Add sequence flows to the process
+    process.addChildElement(flow1);
+    process.addChildElement(flow2);
+    process.addChildElement(flow3);
+
+    // Write the BPMN model to a file
+    try {
+      File file = new File("output.bpmn");
+      Bpmn.writeModelToFile(file, modelInstance);
+      System.out.println("BPMN File generated: " + file.getAbsolutePath());
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  private static SequenceFlow createSequenceFlow(BpmnModelInstance modelInstance, String id, FlowNode from, FlowNode to) {
+    SequenceFlow sequenceFlow = modelInstance.newInstance(SequenceFlow.class);
+    sequenceFlow.setId(id);
+    sequenceFlow.setSource(from);
+    from.getOutgoing().add(sequenceFlow);
+    sequenceFlow.setTarget(to);
+    to.getIncoming().add(sequenceFlow);
+    return sequenceFlow;
+  }
+}
