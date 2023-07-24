@@ -1,0 +1,173 @@
+E:\git\openai-quickstart-python> python -m venv venv
+E:\git\openai-quickstart-python> . venv/bin/activate
+E:\git\openai-quickstart-python> venv\Scripts\activate
+pip install -r requirements.txt
+flask run
+
+import os
+
+import json
+import openai
+from flask import Flask, redirect, render_template, request, url_for
+
+import requests
+from bs4 import BeautifulSoup
+import re
+from collections import Counter
+import requests
+from tenacity import retry, wait_random_exponential, stop_after_attempt
+from termcolor import colored
+
+GPT_MODEL = "gpt-3.5-turbo-0613"
+
+app = Flask(__name__)
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+
+@app.route("/", methods=("GET", "POST"))
+def index():
+    if request.method == "POST":
+        person = request.form["person"]
+        messages = []
+        messages.append({"role": "system", "content": "Answer user questions about persion information by calling ask_shujia function."})
+        messages.append({"role": "user", "content": "Hi, can you tell persion '"+person+"'?"})
+        chat_response = chat_completion_request(messages, functions)
+        assistant_message = chat_response.json()["choices"][0]["message"]
+        messages.append(assistant_message)
+        if assistant_message.get("function_call"):
+            results = execute_function_call(assistant_message)
+            messages.append({"role": "function", "name": assistant_message["function_call"]["name"], "content": results})
+        pretty_print_conversation(messages)
+        return redirect(url_for("index", result=messages[-1]["content"]))
+
+    result = request.args.get("result")
+    return render_template("index.html", result=result)
+
+# Define the function to read a specific document based on the document_id
+def read_document(person_id):
+    # Assume you have a dictionary of documents with their content.
+    documents = {
+        "Shujia Wang": "'Shujia Wang' is Morgan Stanley employee.",
+        "Mingzhu Zhou": "Mingzhu Zhou is house wife.",
+        # Add more documents as needed.
+    }
+    
+    # Check if the document_id exists in the dictionary.
+    if document_id in documents:
+        return documents[document_id]
+    else:
+        return "Document not found."
+
+def chat_completion_request(messages, functions=None, function_call=None, model=GPT_MODEL):
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + "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",
+    }
+    json_data = {"model": model, "messages": messages}
+    if functions is not None:
+        json_data.update({"functions": functions})
+    if function_call is not None:
+        json_data.update({"function_call": function_call})
+    try:
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers=headers,
+            json=json_data,
+        )
+        return response
+    except Exception as e:
+        print("Unable to generate ChatCompletion response")
+        print(f"Exception: {e}")
+        return e
+
+def pretty_print_conversation(messages):
+    role_to_color = {
+        "system": "red",
+        "user": "green",
+        "assistant": "blue",
+        "function": "magenta",
+    }
+    
+    for message in messages:
+        if message["role"] == "system":
+            print(colored(f"system: {message['content']}\n", role_to_color[message["role"]]))
+        elif message["role"] == "user":
+            print(colored(f"user: {message['content']}\n", role_to_color[message["role"]]))
+        elif message["role"] == "assistant" and message.get("function_call"):
+            print(colored(f"assistant: {message['function_call']}\n", role_to_color[message["role"]]))
+        elif message["role"] == "assistant" and not message.get("function_call"):
+            print(colored(f"assistant: {message['content']}\n", role_to_color[message["role"]]))
+        elif message["role"] == "function":
+            print(colored(f"function ({message['name']}): {message['content']}\n", role_to_color[message["role"]]))
+
+functions = [
+    {
+        "name": "ask_shujia",
+        "description": "Get the persion information",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "The name of the person.",
+                },
+            },
+            "required": ["name"],
+        },
+    },
+]
+
+def ask_shujia(name):
+    if "Shujia" in name:
+        return "'Shujia Wang' is Morgan Stanley employee."
+    elif "Mingzhu" in name:
+        return "'Mingzhu Zhou' is house wife"
+    else:
+        return "I don't know"
+
+def execute_function_call(message):
+    if message["function_call"]["name"] == "ask_shujia":
+        name = json.loads(message["function_call"]["arguments"])["name"]
+        results = ask_shujia(name)
+    else:
+        results = f"Error: function {message['function_call']['name']} does not exist"
+    return results
+    
+# messages = []
+# messages.append({"role": "system", "content": "Answer user questions about persion information by calling ask_shujia function."})
+# messages.append({"role": "user", "content": "Hi, can you tell persion 'haoyu wang'?"})
+# chat_response = chat_completion_request(messages, functions)
+# assistant_message = chat_response.json()["choices"][0]["message"]
+# messages.append(assistant_message)
+# if assistant_message.get("function_call"):
+#     results = execute_function_call(assistant_message)
+#     messages.append({"role": "function", "name": assistant_message["function_call"]["name"], "content": results})
+# pretty_print_conversation(messages)
+
+
+autopep8==1.6.0
+certifi==2021.10.8
+charset-normalizer==2.0.7
+click==8.0.3
+et-xmlfile==1.1.0
+Flask==2.0.2
+idna==3.3
+itsdangerous==2.0.1
+Jinja2==3.0.2
+MarkupSafe==2.0.1
+numpy==1.21.3
+openai==0.19.0
+openpyxl==3.0.9
+pandas==1.3.4
+pandas-stubs==1.2.0.35
+pycodestyle==2.8.0
+python-dateutil==2.8.2
+python-dotenv==0.19.2
+pytz==2021.3
+requests==2.26.0
+six==1.16.0
+toml==0.10.2
+tqdm==4.62.3
+urllib3==1.26.7
+Werkzeug==2.0.2
+beautifulsoup4==4.9.3
