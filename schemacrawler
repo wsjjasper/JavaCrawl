@@ -1,0 +1,147 @@
+Yes, you can programmatically generate a JSON schema using SchemaCrawler's API without calling the command line. Here's how you can do it:
+
+---
+
+### **Code Example: Generate JSON Schema Programmatically**
+This example demonstrates how to use SchemaCrawler's API to generate a database schema in JSON format:
+
+```java
+import com.zaxxer.hikari.HikariDataSource;
+import schemacrawler.schemacrawler.*;
+import schemacrawler.schema.Catalog;
+import schemacrawler.tools.json.JsonFormat;
+import schemacrawler.utility.SchemaCrawlerUtility;
+
+import java.io.FileWriter;
+import java.io.Writer;
+
+public class SchemaCrawlerJsonExample {
+
+    public static void main(String[] args) throws Exception {
+        // Set up HikariDataSource
+        HikariDataSource hikariDataSource = new HikariDataSource();
+        hikariDataSource.setJdbcUrl("jdbc:postgresql://localhost:5432/mydb");
+        hikariDataSource.setUsername("myuser");
+        hikariDataSource.setPassword("mypassword");
+
+        // Create a DatabaseConnectionSource from the HikariDataSource
+        DatabaseConnectionSource connectionSource = DatabaseConnectionSourceBuilder.builder()
+                .withConnectionSupplier(hikariDataSource::getConnection)
+                .toOptions();
+
+        // Configure SchemaCrawler options
+        SchemaCrawlerOptions options = SchemaCrawlerOptionsBuilder.newSchemaCrawlerOptions()
+                .withSchemaInfoLevel(SchemaInfoLevelBuilder.standard());
+
+        // Retrieve the database catalog
+        Catalog catalog;
+        try (var connection = connectionSource.get()) {
+            catalog = SchemaCrawlerUtility.getCatalog(connection, options);
+        }
+
+        // Output the catalog to a JSON file
+        try (Writer writer = new FileWriter("schema.json")) {
+            JsonFormat.serialize(catalog, writer);
+            System.out.println("Database schema exported to schema.json");
+        }
+    }
+}
+```
+
+---
+
+### **Explanation**
+1. **HikariDataSource**:
+   - A `HikariDataSource` is created to manage connections to your database.
+
+2. **DatabaseConnectionSource**:
+   - Wraps the `HikariDataSource` using `DatabaseConnectionSourceBuilder`.
+
+3. **SchemaCrawlerOptions**:
+   - Configures SchemaCrawler to specify the level of schema detail (`minimum`, `standard`, `maximum`).
+
+4. **Catalog Retrieval**:
+   - The `SchemaCrawlerUtility.getCatalog` method retrieves the schema catalog, which contains all the metadata about the database.
+
+5. **JSON Serialization**:
+   - The `JsonFormat.serialize` method converts the catalog into JSON format and writes it to a file.
+
+---
+
+### **Generated JSON Example**
+The output JSON file (`schema.json`) will look like this:
+
+```json
+{
+  "catalogs": [
+    {
+      "name": "mydb",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "employees",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "INT",
+                  "nullable": false
+                },
+                {
+                  "name": "name",
+                  "type": "VARCHAR(255)",
+                  "nullable": false
+                },
+                {
+                  "name": "salary",
+                  "type": "DECIMAL(10,2)",
+                  "nullable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### **Advantages**
+- **Fully Programmatic**: No command-line calls are required.
+- **Integration-Friendly**: You can integrate this directly into your Java applications or test cases.
+- **Customizable**: You can manipulate the `Catalog` object if you need to filter or modify the schema before exporting.
+
+---
+
+### **Dependencies**
+Add the following dependencies to your `pom.xml`:
+```xml
+<dependency>
+  <groupId>us.fatehi</groupId>
+  <artifactId>schemacrawler</artifactId>
+  <version>16.20.2</version> <!-- Use the latest version -->
+</dependency>
+<dependency>
+  <groupId>com.zaxxer</groupId>
+  <artifactId>HikariCP</artifactId>
+  <version>5.0.1</version> <!-- Use the latest version -->
+</dependency>
+<dependency>
+  <groupId>org.postgresql</groupId>
+  <artifactId>postgresql</artifactId>
+  <version>42.6.0</version> <!-- Use your database's driver -->
+</dependency>
+```
+
+---
+
+### **Customizing SchemaCrawler Options**
+You can customize the schema information level to include more or fewer details:
+- Use `SchemaInfoLevelBuilder.maximum()` to include all details.
+- Add filters for specific schemas, tables, or columns using `SchemaCrawlerOptionsBuilder`.
+
+This approach allows you to efficiently export the database schema to JSON within a Java application.
