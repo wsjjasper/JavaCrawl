@@ -1,30 +1,56 @@
-WITH RECURSIVE nested_procs (schema, name, level, parent_schema, parent_name) AS (
-  -- Base level: start with the root procedure
-  SELECT 
-    r.ROUTINESCHEMA,
-    r.ROUTINENAME,
-    1 AS level,
-    NULL AS parent_schema,
-    NULL AS parent_name
-  FROM SYSCAT.ROUTINES r
-  WHERE r.ROUTINESCHEMA = 'YOUR_SCHEMA'
-    AND r.ROUTINENAME = 'YOUR_PROC_NAME'
-    AND r.ROUTINETYPE = 'P'
+import java.io.*;
+import java.nio.file.*;
+import java.util.*;
+import java.util.regex.*;
+import java.util.stream.Collectors;
 
-  UNION ALL
+public class ProcedureScanner {
+    private static final Pattern CALL_PATTERN = Pattern.compile("\\bCALL\\s+([a-zA-Z0-9_]+)\\b", Pattern.CASE_INSENSITIVE);
 
-  -- Recursive step: find procedures called by the current procedure
-  SELECT 
-    calld.ROUTINESCHEMA,
-    calld.ROUTINENAME,
-    p.level + 1,
-    p.schema,
-    p.name
-  FROM nested_procs p
-  JOIN SYSCAT.ROUTINEDEP d
-    ON d.BSCHEMA = p.schema AND d.BNAME = p.name AND d.BTYPE = 'P'
-  JOIN SYSCAT.ROUTINES calld
-    ON d.DNAME = calld.ROUTINENAME AND d.DSCHEMA = calld.ROUTINESCHEMA AND d.DTYPE = 'P'
-)
-SELECT * FROM nested_procs
-ORDER BY level, schema, name;
+    public static Map<String, Set<String>> scanProcedures(String folderPath, List<String> procedureNames) throws IOException {
+        Map<String, String> sqlFiles = loadSqlFiles(folderPath);
+        Map<String, Set<String>> procedureCalls = new HashMap<>();
+        
+        for (String procedure : procedureNames) {
+            if (sqlFiles.containsKey(procedure)) {
+                Set<String> nestedCalls = findNestedProcedures(sqlFiles.get(procedure), sqlFiles.keySet());
+                procedureCalls.put(procedure, nestedCalls);
+            }
+        }
+        return procedureCalls;
+    }
+
+    private static Map<String, String> loadSqlFiles(String folderPath) throws IOException {
+        Map<String, String> sqlFiles = new HashMap<>();
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(folderPath), "*.sql")) {
+            for (Path path : stream) {
+                String procedureName = path.getFileName().toString().replace(".sql", "");
+                String content = Files.readString(path);
+                sqlFiles.put(procedureName, content);
+            }
+        }
+        return sqlFiles;
+    }
+
+    private static Set<String> findNestedProcedures(String sqlContent, Set<String> knownProcedures) {
+        Set<String> nestedProcedures = new HashSet<>();
+        Matcher matcher = CALL_PATTERN.matcher(sqlContent);
+        while (matcher.find()) {
+            String calledProcedure = matcher.group(1);
+            if (knownProcedures.contains(calledProcedure)) {
+                nestedProcedures.add(calledProcedure);
+            }
+        }
+        return nestedProcedures;
+    }
+
+    public static void main(String[] args) throws IOException {
+        String folderPath = "path/to/sql/folder"; // Change to actual path
+        List<String> procedureNames = Arrays.asList("sp_123", "sp_456"); // Example procedures
+
+        Map<String, Set<String>> result = scanProcedures(folderPath, procedureNames);
+        result.forEach((proc, calls) -> {
+            System.out.println("Procedure: " + proc + " calls " + calls);
+        });
+    }
+}
