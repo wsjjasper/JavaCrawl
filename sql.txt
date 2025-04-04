@@ -2,7 +2,6 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 import java.util.regex.*;
-import java.util.stream.Collectors;
 
 public class ProcedureScanner {
     private static final Pattern CALL_PATTERN = Pattern.compile("\\bCALL\\s+CRDW\\.([a-zA-Z0-9_]+)\\b", Pattern.CASE_INSENSITIVE);
@@ -13,8 +12,9 @@ public class ProcedureScanner {
         
         for (String procedure : procedureNames) {
             if (sqlFiles.containsKey(procedure)) {
-                Set<String> nestedCalls = findNestedProcedures(sqlFiles.get(procedure), sqlFiles.keySet());
-                procedureCalls.put(procedure, nestedCalls);
+                Set<String> allNestedCalls = new HashSet<>();
+                findAllNestedProcedures(procedure, sqlFiles, allNestedCalls);
+                procedureCalls.put(procedure, allNestedCalls);
             }
         }
         return procedureCalls;
@@ -30,6 +30,18 @@ public class ProcedureScanner {
             }
         }
         return sqlFiles;
+    }
+
+    private static void findAllNestedProcedures(String procedure, Map<String, String> sqlFiles, Set<String> allNestedCalls) {
+        if (!sqlFiles.containsKey(procedure)) {
+            return;
+        }
+        Set<String> directCalls = findNestedProcedures(sqlFiles.get(procedure), sqlFiles.keySet());
+        for (String calledProcedure : directCalls) {
+            if (allNestedCalls.add(calledProcedure)) { // Prevent infinite recursion
+                findAllNestedProcedures(calledProcedure, sqlFiles, allNestedCalls);
+            }
+        }
     }
 
     private static Set<String> findNestedProcedures(String sqlContent, Set<String> knownProcedures) {
