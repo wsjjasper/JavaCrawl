@@ -1,0 +1,30 @@
+WITH RECURSIVE nested_procs (schema, name, level, parent_schema, parent_name) AS (
+  -- Base level: start with the root procedure
+  SELECT 
+    r.ROUTINESCHEMA,
+    r.ROUTINENAME,
+    1 AS level,
+    NULL AS parent_schema,
+    NULL AS parent_name
+  FROM SYSCAT.ROUTINES r
+  WHERE r.ROUTINESCHEMA = 'YOUR_SCHEMA'
+    AND r.ROUTINENAME = 'YOUR_PROC_NAME'
+    AND r.ROUTINETYPE = 'P'
+
+  UNION ALL
+
+  -- Recursive step: find procedures called by the current procedure
+  SELECT 
+    calld.ROUTINESCHEMA,
+    calld.ROUTINENAME,
+    p.level + 1,
+    p.schema,
+    p.name
+  FROM nested_procs p
+  JOIN SYSCAT.ROUTINEDEP d
+    ON d.BSCHEMA = p.schema AND d.BNAME = p.name AND d.BTYPE = 'P'
+  JOIN SYSCAT.ROUTINES calld
+    ON d.DNAME = calld.ROUTINENAME AND d.DSCHEMA = calld.ROUTINESCHEMA AND d.DTYPE = 'P'
+)
+SELECT * FROM nested_procs
+ORDER BY level, schema, name;
