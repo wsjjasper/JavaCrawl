@@ -5,7 +5,7 @@ import java.util.regex.*;
 import java.util.stream.Collectors;
 
 public class ProcedureScanner {
-    private static final Pattern CALL_PATTERN = Pattern.compile("\\bCALL\\s+([a-zA-Z0-9_]+)\\b", Pattern.CASE_INSENSITIVE);
+    private static final Pattern CALL_PATTERN = Pattern.compile("\\bCALL\\s+CRDW\\.([a-zA-Z0-9_]+)\\b", Pattern.CASE_INSENSITIVE);
 
     public static Map<String, Set<String>> scanProcedures(String folderPath, List<String> procedureNames) throws IOException {
         Map<String, String> sqlFiles = loadSqlFiles(folderPath);
