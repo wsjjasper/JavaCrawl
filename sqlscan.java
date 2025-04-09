@@ -1,6 +1,6 @@
 import java.io.; import java.nio.file.; import java.util.; import java.util.regex.;
 
-public class ProcedureScanner { private static final Pattern CALL_PATTERN = Pattern.compile("\bCALL\s+(CRDW|CRDB)\.([a-zA-Z0-9_]+)\b", Pattern.CASE_INSENSITIVE); private static final Pattern TABLE_USAGE_PATTERN = Pattern.compile( "\b(SELECT|INSERT\s+INTO|UPDATE|DELETE\s+FROM|MERGE\s+INTO)\s+([a-zA-Z0-9_.]+)", Pattern.CASE_INSENSITIVE);
+public class ProcedureScanner { private static final Pattern CALL_PATTERN = Pattern.compile("\bCALL\s+(CRDW|CRDB)\.([a-zA-Z0-9_]+)\b", Pattern.CASE_INSENSITIVE); private static final Pattern SELECT_FROM_PATTERN = Pattern.compile("\bFROM\s+([a-zA-Z0-9_.]+)\b", Pattern.CASE_INSENSITIVE); private static final Pattern INSERT_INTO_PATTERN = Pattern.compile("\bINSERT\s+INTO\s+([a-zA-Z0-9_.]+)\b", Pattern.CASE_INSENSITIVE); private static final Pattern UPDATE_PATTERN = Pattern.compile("\bUPDATE\s+([a-zA-Z0-9_.]+)\b", Pattern.CASE_INSENSITIVE); private static final Pattern DELETE_FROM_PATTERN = Pattern.compile("\bDELETE\s+FROM\s+([a-zA-Z0-9_.]+)\b", Pattern.CASE_INSENSITIVE); private static final Pattern MERGE_INTO_PATTERN = Pattern.compile("\bMERGE\s+INTO\s+([a-zA-Z0-9_.]+)\b", Pattern.CASE_INSENSITIVE);
 
 public static Map<String, Set<String>> scanProcedures(String folderPath, List<String> procedureNames) throws IOException {
     Map<String, String> sqlFiles = loadSqlFiles(folderPath);
@@ -71,12 +71,33 @@ private static Set<String> findNestedProcedures(String sqlContent, Set<String> k
 private static Set<String> findTableUsages(String sqlContent) {
     Set<String> usages = new HashSet<>();
     String cleanSql = removeComments(sqlContent);
-    Matcher matcher = TABLE_USAGE_PATTERN.matcher(cleanSql);
-    while (matcher.find()) {
-        String operation = matcher.group(1).toUpperCase();
-        String object = matcher.group(2);
-        usages.add(operation + " -> " + object);
+
+    // SELECT ... FROM
+    Matcher selectMatcher = SELECT_FROM_PATTERN.matcher(cleanSql);
+    while (selectMatcher.find()) {
+        usages.add("SELECT -> " + selectMatcher.group(1));
     }
+    // INSERT INTO
+    Matcher insertMatcher = INSERT_INTO_PATTERN.matcher(cleanSql);
+    while (insertMatcher.find()) {
+        usages.add("INSERT -> " + insertMatcher.group(1));
+    }
+    // UPDATE
+    Matcher updateMatcher = UPDATE_PATTERN.matcher(cleanSql);
+    while (updateMatcher.find()) {
+        usages.add("UPDATE -> " + updateMatcher.group(1));
+    }
+    // DELETE FROM
+    Matcher deleteMatcher = DELETE_FROM_PATTERN.matcher(cleanSql);
+    while (deleteMatcher.find()) {
+        usages.add("DELETE -> " + deleteMatcher.group(1));
+    }
+    // MERGE INTO
+    Matcher mergeMatcher = MERGE_INTO_PATTERN.matcher(cleanSql);
+    while (mergeMatcher.find()) {
+        usages.add("MERGE -> " + mergeMatcher.group(1));
+    }
+
     return usages;
 }
 
