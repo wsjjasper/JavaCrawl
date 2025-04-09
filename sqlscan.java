@@ -9,7 +9,15 @@ public class ProcedureScanner {
     // Identifier supporting quoted ("My Table") and unquoted (SCHEMA.TABLE) names
     private static final String IDENTIFIER = "(?:\"[^\"]+\"|[A-Za-z0-9_]+)(?:\\.(?:\"[^\"]+\"|[A-Za-z0-9_]+))*";
     private static final Pattern SELECT_FROM_PATTERN = Pattern.compile("\\bFROM\\s+(?!\\()((?:" + IDENTIFIER + "\s*,\s*)*" + IDENTIFIER + ")", Pattern.CASE_INSENSITIVE);
-    String regex = "(?i)(?<=\\bfrom\\s|,)\\s*([A-Za-z_]\\w*(?:\\.[A-Za-z_]\\w*)?)";
+    String regexAll = 
+    "(?i)"              // case‑insensitive
+  + "(?:\\bfrom\\s*|"   //  either start at "from "
+  +   "\\G\\s*,\\s*)"   //  or continue at end of last match + a comma
+  + "([A-Za-z_]\\w*"    //  capture one identifier
+  +   "(?:\\.[A-Za-z_]\\w*)?"  //  optional ".schema"
+  + ")";
+
+Pattern p2 = Pattern.compile(regexAll);
     private static final Pattern JOIN_PATTERN        = Pattern.compile("\\bJOIN\\s+(?!\\()(" + IDENTIFIER + ")", Pattern.CASE_INSENSITIVE);
     private static final Pattern INSERT_INTO_PATTERN= Pattern.compile("\\bINSERT\\s+INTO\\s+(" + IDENTIFIER + ")", Pattern.CASE_INSENSITIVE);
     private static final Pattern UPDATE_PATTERN     = Pattern.compile("\\bUPDATE\\s+(" + IDENTIFIER + ")", Pattern.CASE_INSENSITIVE);
