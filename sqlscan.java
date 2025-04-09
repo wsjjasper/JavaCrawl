@@ -8,12 +8,14 @@ public class ProcedureScanner {
 
     // Identifier supporting quoted ("My Table") and unquoted (SCHEMA.TABLE) names
     private static final String IDENTIFIER = "(?:\"[^\"]+\"|[A-Za-z0-9_]+)(?:\\.(?:\"[^\"]+\"|[A-Za-z0-9_]+))*";
-    private static final Pattern SELECT_FROM_PATTERN = Pattern.compile("\\bFROM\\s+" + IDENTIFIER, Pattern.CASE_INSENSITIVE);
-    private static final Pattern JOIN_PATTERN        = Pattern.compile("\\bJOIN\\s+" + IDENTIFIER, Pattern.CASE_INSENSITIVE);
-    private static final Pattern INSERT_INTO_PATTERN= Pattern.compile("\\bINSERT\\s+INTO\\s+" + IDENTIFIER, Pattern.CASE_INSENSITIVE);
-    private static final Pattern UPDATE_PATTERN     = Pattern.compile("\\bUPDATE\\s+" + IDENTIFIER, Pattern.CASE_INSENSITIVE);
-    private static final Pattern DELETE_FROM_PATTERN= Pattern.compile("\\bDELETE\\s+FROM\\s+" + IDENTIFIER, Pattern.CASE_INSENSITIVE);
-    private static final Pattern MERGE_INTO_PATTERN  = Pattern.compile("\\bMERGE\\s+INTO\\s+" + IDENTIFIER, Pattern.CASE_INSENSITIVE);
+    private static final Pattern SELECT_FROM_PATTERN = Pattern.compile("\\bFROM\\s+(?!\\()(" + IDENTIFIER + ")", Pattern.CASE_INSENSITIVE);
+    private static final Pattern JOIN_PATTERN        = Pattern.compile("\\bJOIN\\s+(?!\\()(" + IDENTIFIER + ")", Pattern.CASE_INSENSITIVE);
+    private static final Pattern INSERT_INTO_PATTERN= Pattern.compile("\\bINSERT\\s+INTO\\s+(" + IDENTIFIER + ")", Pattern.CASE_INSENSITIVE);
+    private static final Pattern UPDATE_PATTERN     = Pattern.compile("\\bUPDATE\\s+(" + IDENTIFIER + ")", Pattern.CASE_INSENSITIVE);
+    private static final Pattern DELETE_FROM_PATTERN= Pattern.compile("\\bDELETE\\s+FROM\\s+(" + IDENTIFIER + ")", Pattern.CASE_INSENSITIVE);
+    private static final Pattern MERGE_INTO_PATTERN  = Pattern.compile("\\bMERGE\\s+INTO\\s+(" + IDENTIFIER + ")", Pattern.CASE_INSENSITIVE);
+    private static final Pattern SELECT_INTO_FROM_PATTERN = Pattern.compile("\\bSELECT\\s+.+?\\s+INTO\\s+.+?\\s+FROM\\s+(" + IDENTIFIER + ")", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    private static final Pattern TABLE_FUNCTION_PATTERN = Pattern.compile("\\bFROM\\s+TABLE\\s*\\(([^)]+)\\)", Pattern.CASE_INSENSITIVE);
     private static final Pattern DYNAMIC_SQL_PATTERN= Pattern.compile("\\bEXECUTE\\s+IMMEDIATE\\b", Pattern.CASE_INSENSITIVE);
 
     public static Map<String, Set<String>> scanProcedures(String folderPath, List<String> procedureNames) throws IOException {
@@ -38,7 +40,7 @@ public class ProcedureScanner {
                 String content = sqlFiles.get(proc);
                 Set<String> usages = findTableUsages(content);
                 boolean dynamic = hasDynamicSQL(content);
-                System.out.println("Procedure: " + proc + (dynamic?" [dynamic SQL]":"") + " uses: " + usages);
+                System.out.println("Procedure: " + proc + (dynamic ? " [dynamic SQL]" : "") + " uses: " + usages);
             }
         }
 
@@ -81,25 +83,27 @@ public class ProcedureScanner {
         Set<String> usages = new HashSet<>();
         String clean = removeCommentsAndCTEs(sql);
         extract(clean, SELECT_FROM_PATTERN, "SELECT", usages);
+        extract(clean, SELECT_INTO_FROM_PATTERN, "SELECT", usages);
         extract(clean, JOIN_PATTERN,        "JOIN",   usages);
         extract(clean, INSERT_INTO_PATTERN,"INSERT", usages);
         extract(clean, UPDATE_PATTERN,     "UPDATE", usages);
         extract(clean, DELETE_FROM_PATTERN,"DELETE", usages);
         extract(clean, MERGE_INTO_PATTERN,  "MERGE",  usages);
+        extract(clean, TABLE_FUNCTION_PATTERN, "TABLE_FUNC", usages);
         return usages;
     }
 
     private static void extract(String sql, Pattern p, String op, Set<String> out) {
         Matcher m = p.matcher(sql);
         while (m.find()) {
-            String obj = m.group(1);
-            out.add(op + " -> " + obj);
+            String obj = m.group(1).trim();
+            if (!obj.isEmpty()) out.add(op + " -> " + obj);
         }
     }
 
     private static String removeCommentsAndCTEs(String sql) {
         // Strip CTEs at the start: WITH ... AS (...)
-        sql = sql.replaceAll("(?is)^\\s*WITH\\s+[\\s\\S]+?\)\\s*", "");
+        sql = sql.replaceAll("(?is)^\\s*WITH\\s+[\\s\\S]+?\\)\\s*", "");
         // Strip block comments
         sql = sql.replaceAll("(?s)/\\*.*?\\*/", "");
         // Strip line comments
