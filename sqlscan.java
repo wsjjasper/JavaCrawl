@@ -9,13 +9,15 @@ public class ProcedureScanner {
     // Identifier supporting quoted ("My Table") and unquoted (SCHEMA.TABLE) names
     private static final String IDENTIFIER = "(?:\"[^\"]+\"|[A-Za-z0-9_]+)(?:\\.(?:\"[^\"]+\"|[A-Za-z0-9_]+))*";
     private static final Pattern SELECT_FROM_PATTERN = Pattern.compile("\\bFROM\\s+(?!\\()((?:" + IDENTIFIER + "\s*,\s*)*" + IDENTIFIER + ")", Pattern.CASE_INSENSITIVE);
-    String regexAll = 
-    "(?i)"              // case‑insensitive
-  + "(?:\\bfrom\\s*|"   //  either start at "from "
-  +   "\\G\\s*,\\s*)"   //  or continue at end of last match + a comma
-  + "([A-Za-z_]\\w*"    //  capture one identifier
-  +   "(?:\\.[A-Za-z_]\\w*)?"  //  optional ".schema"
-  + ")";
+String regexAllWithAlias =
+    "(?i)"                       // case‑insensitive
+  + "(?:\\bfrom\\s*|"           // either start at "from "
+  +   "\\G\\s*,\\s*)"           // or continue at end of last match + a comma
+  + "([A-Za-z_]\\w*"            // 1) capture the table name...
+  +   "(?:\\.[A-Za-z_]\\w*)?"   //    optionally schema‑qualified
+  + ")"                         
+  + "(?:\\s+(?:as\\s+)?[A-Za-z_]\\w*)?";  // 2) optionally match " AS alias" or " alias"
+
 
 Pattern p2 = Pattern.compile(regexAll);
     private static final Pattern JOIN_PATTERN        = Pattern.compile("\\bJOIN\\s+(?!\\()(" + IDENTIFIER + ")", Pattern.CASE_INSENSITIVE);
