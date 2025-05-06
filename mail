@@ -1,0 +1,12 @@
+ggSubject: Confirmation on Auto-Publish Adjustment Change
+
+Hi Joseph and Team,
+
+As per your request, we have implemented the change to automatically publish adjustment data—eliminating the need for manual review and publishing via the UI.
+
+We understand this helps reduce manual effort; however, we’ve also noticed that this change results in the adjusted data being automatically marked as Official and Final, which means it can be consumed directly by downstream processes such as stress calculations.
+
+We’d like to confirm if this behavior aligns with your expectations—that is, no manual review or publishing is required going forward. Please let us know if this is acceptable or if any further adjustments are needed.
+
+Best regards,
+[Your Name]
