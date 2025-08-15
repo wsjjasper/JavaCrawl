@@ -1,35 +1,21 @@
-Gotcha — if your **Autosys** version doesn’t support `-J`, then for finding all jobs in **`INACTIVE/ON_ICE` (IO)** status, you can filter the `autorep -q` output.
+Got it. Since your `autorep -q` shows a 4-column table and the **status is the last field** (e.g., `OI`), the most robust filter is to key off the **last column** and skip the 2 header lines.
 
-Here’s a one-liner:
-
-```bash
-autorep -j ALL -q | awk '$4=="INACTIVE/ON_ICE" {print $1}'
-```
-
-**Explanation:**
-
-* `autorep -j ALL -q` → lists all jobs and their statuses.
-* `awk '$4=="INACTIVE/ON_ICE" {print $1}'` → picks only jobs where the **status column** equals `INACTIVE/ON_ICE` (prints the job name).
-* `$4` is the status column in `-q` output (job name is `$1`).
-
----
-
-If you want **job name + status** for verification:
+**All jobs currently OI (or IO just in case):**
 
 ```bash
-autorep -j ALL -q | awk '$4=="INACTIVE/ON_ICE" {print $1, $4}'
+autorep -j ALL -q | awk 'NR>2 && ($NF=="OI" || $NF=="IO") {print $1}'
 ```
 
----
-
-If you want to **search only jobs containing `abc`** that are in IO status:
+**Only jobs whose name matches `abc%` and are OI/IO:**
 
 ```bash
-autorep -j "abc%" -q | awk '$4=="INACTIVE/ON_ICE" {print $1}'
+autorep -j "abc%" -q | awk 'NR>2 && ($NF=="OI" || $NF=="IO") {print $1}'
 ```
 
----
+**If you also want to see name + status for verification:**
 
-If you want, I can also make you a **version that gets the job names in IO and then dumps their JIL definitions** automatically.
-That would solve your earlier problem of status + job details.
-Do you want me to prepare that?
+```bash
+autorep -j ALL -q | awk 'NR>2 {print $1, $NF}' | awk '$2=="OI" || $2=="IO" {print}'
+```
+
+> Why this works: `NR>2` skips the header; `$NF` is the last field (Status), so it’s stable even if spacing shifts.
