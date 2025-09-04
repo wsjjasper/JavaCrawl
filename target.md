@@ -1,126 +1,170 @@
-Got it — you’re essentially trying to modernize and standardize a **data pipeline orchestration and dataset management framework** that today is fragmented across file watchers, Autosys dependencies, ad-hoc triggers, and custom scripts. Let me break this down for you in a **structured summary** and then propose **an action plan with options**.
+This is a great restart — you’ve crystallized your **goals** very clearly. Let’s build the structured plan *from your stated goals downward*.
 
 ---
 
-## 🔑 Key Points (Current State & Challenges)
+## 🎯 Refactor Goals (Your Version)
 
-### 1. Dataset Characteristics
+1. **Dataset definition & management**
 
-* **Variety**: CSV, Parquet, database extracts, custom formats with manifest.
-* **Versioning**: Datasets have daily versions, but version tracking/management is ad-hoc.
-* **Metadata**: No unified metadata management (format, schema, source, version, lineage).
+   * Easy way to define and register datasets (with versioning).
+   * Discovery & categorization (searchable dataset registry).
+   * SLA definition per dataset.
 
-### 2. Processing
+2. **Process definition with I/O**
 
-* **Transformations**: Enrichment, derivation, joins, aggregation.
-* **Dependencies**: Strong inter-dataset dependencies but handled manually (filewatcher/Autosys).
-* **Engines**: Python, Java, Spark jobs without a unified abstraction layer.
+   * Each process explicitly declares **input datasets, output datasets, and SLA**.
+   * Dataset–process linkage comes from I/O definitions.
+   * Concern: when processes have **multiple inputs/outputs**, simple I/O definitions may obscure *intermediate* linkages (e.g., input A → intermediate X → output B).
 
-### 3. Orchestration
+3. **Observability**
 
-* **Current**: Autosys jobs/boxes, file watcher triggers, UI-triggered ad-hoc runs.
-* **Limitations**:
+   * Unified view of datasets (definition, versions).
+   * Unified view of processes (definition, DAG).
+   * Instance-level tracking: dataset registration events, process runs (running/completed/failed).
+   * SLA monitoring & alerts.
 
-  * Dependency management is brittle (job vs. data dependency).
-  * Limited observability (no central lineage, status tracking).
-  * SLA monitoring is fragmented.
+4. **Standardized processing framework**
 
-### 4. Downstream Consumption
+   * Default execution engine = **Spark**.
+   * Developers provide: input datasets + output datasets + Spark SQL logic.
+   * Most transformations handled declaratively → less boilerplate code.
 
-* **Feeds**: To external systems, requiring SLA guarantees & notifications.
-* **Database Tables/Views**: Used for analytics and reporting.
+5. **Compatibility with existing Autosys jobs**
 
-### 5. Special Cases
+   * Wrapper/API layer to allow legacy jobs to:
 
-* **Ad-hoc runs**: Triggered from UI (e.g., adjustments), should cascade downstream impact.
-* **Retry & Recovery**: Not standardized, often manual.
-
----
-
-## 🎯 Refactor Goals
-
-1. **Centralize dataset management**: metadata, versioning, schema, lineage.
-2. **Shift from job-based to data-driven orchestration** (datasets as first-class citizens).
-3. **Standardize dependency management** (dataset A ready → triggers dataset B).
-4. **Provide observability**: lineage, SLA, retries, error handling.
-5. **Support both scheduled and ad-hoc runs consistently**.
-6. **Make it tech-agnostic** (works with Python, Java, Spark, etc.).
+     * Register datasets produced.
+     * Register process completion/failure.
+   * No need to re-engineer old jobs immediately.
 
 ---
 
-## 🛠 Potential Action Plan
+## 🏗️ Proposed Framework Components
 
-### Phase 1 – Foundation
+### 1. Dataset Registry
 
-* **Metadata Layer**
+* Central store (DB + service API/UI).
+* Holds dataset metadata:
 
-  * Define dataset metadata model: source, format, schema, partitioning, version, lineage.
-  * Implement a **metadata store** (options: custom DB tables, Hive Metastore, Data Catalog).
-* **Versioning & Auditability**
+  * Name, category, owner.
+  * Format (CSV, Parquet, DB table, custom).
+  * Version (timestamp or logical version).
+  * SLA (expected availability time).
+* Provides discovery & search (category, lineage, schema).
 
-  * Standardize dataset version naming convention (date-based, incremental).
-  * Store dataset lifecycle events (created, validated, consumed).
+### 2. Process Registry
 
-### Phase 2 – Orchestration Refactor
+* Stores process definitions:
 
-* **Choose orchestration approach**:
+  * Process ID, description, owner.
+  * Input datasets, output datasets (I/O contract).
+  * SLA (end-to-end).
+* DAG = inferred automatically from process I/O mapping.
 
-  1. **Workflow orchestration**: Airflow, Luigi, Prefect.
-  2. **Dataflow orchestration**: Dagster, Flyte (datasets as first-class objects).
-  3. **Hybrid**: Still run under Autosys, but externalize dataset dependency logic.
-* **Data dependency graph**
+⚠️ For **intermediate dataset linkage**:
 
-  * Express jobs as transformations **from dataset X → dataset Y**.
-  * Automatically build DAGs (directed acyclic graphs) of processing.
+* Option A: Require developers to declare intermediate outputs explicitly as named datasets.
+* Option B: Allow **nested transformations** inside a process, but track them in metadata (sub-step graph).
 
-### Phase 3 – Execution Layer
+### 3. Execution Framework
 
-* **Standardize execution interface** (abstract away Python, Java, Spark).
-* **Implement retry & recovery strategies** (checkpointing, idempotent writes).
-* **Ad-hoc runs**
+* Standardized Spark wrapper.
+* Developer workflow:
 
-  * Trigger via metadata store → recompute dependencies selectively.
+  * Define process YAML/JSON (inputs, outputs, SLA).
+  * Write Spark SQL logic.
+  * Register with framework.
+* Framework handles:
 
-### Phase 4 – Observability & SLA
+  * Dataset reads/writes.
+  * Version registration.
+  * Logging + metrics.
 
-* **Monitoring**: Track dataset readiness, failures, and delays.
-* **SLA engine**: Notifications when downstream feeds/tables are at risk.
-* **Lineage & Impact analysis**:
+### 4. Observability & SLA Layer
 
-  * Show “if dataset X fails, which downstream datasets/systems are impacted.”
+* Dashboard for:
 
----
+  * Dataset readiness (versions, late/missing).
+  * Process status (running, failed, completed).
+  * DAG lineage (which processes/datasets depend on what).
+* SLA monitor:
 
-## 📌 Options for Refactor Strategy
+  * Dataset SLA breaches → notify owners/downstream processes.
+  * Process SLA breaches → escalate alerts.
 
-### Option A – Incremental (Low Disruption)
+### 5. Legacy Integration Layer
 
-* Keep Autosys for scheduling.
-* Build a **metadata service + dependency tracker**.
-* Wrap existing jobs to register dataset events.
-* Add lineage & SLA monitoring gradually.
+* Wrapper/API for Autosys jobs:
 
-### Option B – Modern Orchestrator (Medium Disruption)
-
-* Adopt **Airflow/Prefect** as the main orchestration tool.
-* Migrate workflows gradually from Autosys.
-* Implement dataset abstraction in orchestrator.
-
-### Option C – Dataset-First Framework (High Transformation)
-
-* Adopt a **data-native orchestrator** (Dagster, Flyte).
-* Treat datasets as entities, jobs as transformations.
-* Unified metadata, lineage, observability, and orchestration.
-* Requires retraining and phased migration.
+  * `register_dataset(dataset_name, version, status)`
+  * `register_process(process_name, status)`
+* Minimal intrusion: existing scripts just add 1–2 API calls.
+* Allows hybrid world while migrating gradually.
 
 ---
 
-✅ **Recommendation** (given you are in a bank-like environment with Autosys and mixed tech):
+## 📌 Conceptual Architecture (Aligned with Goals)
 
-* Start with **Option A (Incremental)** → build metadata + dataset dependency tracking layer.
-* Then migrate critical pipelines to **Option B (Airflow/Prefect)** where more flexibility is needed.
-* Keep Option C as a long-term strategic vision once maturity and buy-in are achieved.
+```
+          ┌──────────────────────────────────────┐
+          │            Observability UI           │
+          │  - Datasets (definition, versions)    │
+          │  - Processes (definition, runs)       │
+          │  - DAG lineage, SLA monitoring        │
+          └───────────────────┬───────────────────┘
+                              │
+                ┌─────────────┴─────────────┐
+                │     Metadata Services      │
+                │  - Dataset Registry        │
+                │  - Process Registry        │
+                │  - Lineage Graph           │
+                └─────────────┬─────────────┘
+                              │
+            ┌─────────────────┴─────────────────┐
+            │       Execution Framework          │
+            │  - Spark SQL wrapper (standard)    │
+            │  - Legacy job wrapper (API/CLI)    │
+            └─────────────────┬─────────────────┘
+                              │
+             ┌────────────────┴────────────────┐
+             │           Storage Layer          │
+             │ - Parquet / CSV / DB Tables      │
+             │ - Custom files w/ manifest       │
+             └──────────────────────────────────┘
+```
 
 ---
 
-Would you like me to also **draft a proposed target architecture diagram (conceptual)** showing datasets, metadata, orchestration, and execution layers? That could help you pitch this refactor more clearly to your stakeholders.
+## 🚀 Migration Roadmap (High-Level)
+
+1. **Phase 1 – Foundations**
+
+   * Build Dataset Registry (basic schema + API).
+   * Build Process Registry with I/O definitions.
+   * Implement legacy wrapper (register dataset/process).
+
+2. **Phase 2 – Observability**
+
+   * Build dashboards for dataset status + process runs.
+   * Add SLA definitions & notifications.
+
+3. **Phase 3 – Standardized Framework**
+
+   * Deliver Spark SQL wrapper framework.
+   * Onboard new processes onto the framework.
+
+4. **Phase 4 – Migration**
+
+   * Gradual migration of Autosys jobs → standard framework.
+   * Encourage declaring intermediate datasets explicitly to improve linkage accuracy.
+
+---
+
+👉 Your **biggest design choice** will be:
+
+* Do you **force all intermediates to be declared as datasets** (clear lineage, more effort)?
+* Or do you **allow processes to be “black boxes”** (simpler, but lineage less precise)?
+
+I can help you map **trade-offs for those two approaches** if you want.
+
+Would you like me to expand on that trade-off (intermediate datasets explicit vs implicit) so you can decide which model fits your org best?
