@@ -1,55 +1,47 @@
-In FEEL (Camunda DMN), you can’t directly treat an integer as a date — you first need to **convert the integer into a string** in the right format, then use the `date()` function to parse it into a FEEL `date`.
+In Camunda DMN, you can use **FEEL built-in functions** like `matches()`, `substring()` and `substring before/after` to extract text inside parentheses.
 
----
+Here’s a practical example:
 
-### Example 1: Integer in `yyyyMMdd` format
-
-Suppose the input is:
+Suppose the input string is:
 
 ```
-20250904
+"Risk Rating (High)"
 ```
 
-✅ FEEL expression:
+✅ **FEEL expression to extract text within `()`**:
 
 ```feel
-date(string(input))
+if matches(input, ".*\\(.*\\).*") 
+then substring before(substring after(input, "("), ")") 
+else null
 ```
 
-* `string(input)` → converts `20250904` (number) into `"20250904"`.
-* `date("2025-09-04")` is required, so the string must have dashes.
-  If your integer is `20250904`, you must **reformat** it.
+### Explanation:
 
-To reformat:
+1. `matches(input, ".*\\(.*\\).*")` → checks if the string contains parentheses.
+2. `substring after(input, "(")` → returns everything after the first `(`.
+
+   * `"High)"` in this example.
+3. `substring before(..., ")")` → trims everything after the `)`.
+
+   * `"High"` in this example.
+4. If no parentheses exist, it returns `null`.
+
+---
+
+👉 If you want it to return the **original string when no parentheses exist**, just change the `else` part:
 
 ```feel
-date(concat(substring(string(input),1,4), "-", substring(string(input),5,2), "-", substring(string(input),7,2)))
+if matches(input, ".*\\(.*\\).*") 
+then substring before(substring after(input, "("), ")") 
+else input
 ```
 
-Result: `date("2025-09-04")`.
+That way:
+
+* `"Risk Rating (High)"` → `"High"`
+* `"Risk Rating"` → `"Risk Rating"`
 
 ---
 
-### Example 2: Compare with another date
-
-Suppose you want to check if `input` date is **after today**:
-
-```feel
-date(concat(substring(string(input),1,4), "-", substring(string(input),5,2), "-", substring(string(input),7,2))) > today()
-```
-
----
-
-### Example 3: Check if integer date is before `2025-12-31`
-
-```feel
-date(concat(substring(string(input),1,4), "-", substring(string(input),5,2), "-", substring(string(input),7,2))) < date("2025-12-31")
-```
-
----
-
-⚡ Tip: If your integer is already in **epoch days** (days since 1970-01-01), then you’d need a different conversion using arithmetic, but most DMN cases use `yyyyMMdd`.
-
----
-
-👉 Do you want me to give you a **reusable FEEL function** you can drop in DMN to convert `yyyyMMdd` integer into a `date`, so you don’t repeat the long `concat(substring(...))` each time?
+Do you want me to also show you how to **handle multiple parentheses** in a string (e.g., `"ABC (X) DEF (Y)"` → pick `"X"` or `"Y"`)?
