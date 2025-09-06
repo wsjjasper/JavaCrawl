@@ -1,33 +1,53 @@
-Perfect 👍 Let’s merge the **formula rewriting logic** into your `ReconcilerService`.
-This way, after reconciling DB2 + Excel data and building the new sheet, the service will also update all formulas based on the new row positions.
+Perfect 👍 Option **B** (clean separation) will keep your `ReconcilerService` focused on **data comparison only**, and move all Excel-specific logic (formula updates) into a helper class (`FormulaUpdater`).
 
-Below is a consolidated version:
+That way:
+
+* `ReconcilerService` returns both the reconciled rows **and** the `newKeyToRowMap`.
+* Later, when writing the new Excel, you call `FormulaUpdater.updateFormulas(...)` with the workbook.
 
 ---
 
-## 🔧 `ReconcilerService` (with formula updater merged)
+## 🔧 Step 1: Update `ReconcileResult`
+
+Add `newKeyToRowMap` so it can be used later.
 
 ```java
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.stereotype.Service;
+public class ReconcileResult {
+    private final List<String> columns;
+    private final List<Map<String, String>> rows;
+    private final Map<String, Integer> newKeyToRowMap;
 
-import java.util.*;
-import java.util.regex.*;
+    public ReconcileResult(List<String> columns,
+                           List<Map<String, String>> rows,
+                           Map<String, Integer> newKeyToRowMap) {
+        this.columns = columns;
+        this.rows = rows;
+        this.newKeyToRowMap = newKeyToRowMap;
+    }
 
+    public List<String> getColumns() { return columns; }
+    public List<Map<String, String>> getRows() { return rows; }
+    public Map<String, Integer> getNewKeyToRowMap() { return newKeyToRowMap; }
+}
+```
+
+---
+
+## 🔧 Step 2: Simplify `ReconcilerService`
+
+Now it only returns the map, not touch POI:
+
+```java
 @Service
 public class ReconcilerService {
 
     private static final String STATUS_COL = "MatchStatus";
     private static final String CHANGED_COLS = "ChangedColumns";
-    private static final Pattern CELL_REF_PATTERN = Pattern.compile("([A-Z]+)(\\d+)");
 
     public ReconcileResult reconcile(List<Map<String, Object>> db2Rows,
                                      Map<String, Map<String, String>> excelByKey,
                                      Set<String> excelAllColumns,
-                                     String keyColumn,
-                                     Workbook workbook,
-                                     String sheetName) {
+                                     String keyColumn) {
 
         LinkedHashSet<String> dbColumns = new LinkedHashSet<>();
         if (!db2Rows.isEmpty()) {
@@ -50,10 +70,10 @@ public class ReconcilerService {
         }
 
         List<Map<String, String>> outputRows = new ArrayList<>();
-        Map<String, Integer> newKeyToRowMap = new HashMap<>(); // for formula update
+        Map<String, Integer> newKeyToRowMap = new HashMap<>();
 
-        int rowCounter = 2; // Excel rows start at 1, header is row 1
-        // 1) DB2 baseline rows
+        int rowCounter = 2; // Excel starts at 1, header is row 1
+        // DB2 rows baseline
         for (Map<String, Object> dbRow : db2Rows) {
             String keyVal = dbRow.get(keyColumn) == null ? "" : String.valueOf(dbRow.get(keyColumn));
             Map<String, String> out = new LinkedHashMap<>();
@@ -94,14 +114,13 @@ public class ReconcilerService {
             }
             outputRows.add(out);
 
-            // map key → new row number
             if (!keyVal.isEmpty()) {
                 newKeyToRowMap.put(keyVal, rowCounter);
             }
             rowCounter++;
         }
 
-        // 2) Excel NEW rows
+        // Excel-only rows
         for (Map.Entry<String, Map<String, String>> e : excelByKey.entrySet()) {
             String key = e.getKey();
             if (!dbKeys.contains(key)) {
@@ -125,28 +144,43 @@ public class ReconcilerService {
             }
         }
 
-        // Update formulas in the workbook
-        updateFormulas(workbook, sheetName, keyColumn, newKeyToRowMap);
-
-        return new ReconcileResult(columnsOrdered, outputRows);
+        return new ReconcileResult(columnsOrdered, outputRows, newKeyToRowMap);
     }
+}
+```
 
-    private void updateFormulas(Workbook workbook,
-                                String dataSheetName,
-                                String keyColumn,
-                                Map<String, Integer> newKeyToRowMap) {
+---
 
-        Sheet sheet = workbook.getSheet(dataSheetName);
+## 🔧 Step 3: New `FormulaUpdater`
 
-        // Build old row→key mapping
+```java
+import org.apache.poi.ss.usermodel.*;
+import java.util.*;
+import java.util.regex.*;
+
+public class FormulaUpdater {
+
+    private static final Pattern CELL_REF_PATTERN = Pattern.compile("([A-Z]+)(\\d+)");
+
+    public static void updateFormulas(Workbook workbook,
+                                      String sheetName,
+                                      String keyColumn,
+                                      Map<String, Integer> newKeyToRowMap) {
+
+        Sheet sheet = workbook.getSheet(sheetName);
+        if (sheet == null) return;
+
+        // old row → key
         Map<Integer, String> oldRowToKey = new HashMap<>();
         int keyColIndex = -1;
 
         Row headerRow = sheet.getRow(0);
-        for (Cell cell : headerRow) {
-            if (cell.getStringCellValue().equalsIgnoreCase(keyColumn)) {
-                keyColIndex = cell.getColumnIndex();
-                break;
+        if (headerRow != null) {
+            for (Cell cell : headerRow) {
+                if (cell.getStringCellValue().equalsIgnoreCase(keyColumn)) {
+                    keyColIndex = cell.getColumnIndex();
+                    break;
+                }
             }
         }
         if (keyColIndex == -1) return;
@@ -163,7 +197,6 @@ public class ReconcilerService {
             }
         }
 
-        // Iterate formula cells
         for (Row row : sheet) {
             for (Cell cell : row) {
                 if (cell != null && cell.getCellType() == CellType.FORMULA) {
@@ -177,10 +210,9 @@ public class ReconcilerService {
         }
     }
 
-    private String rewriteFormula(String formula,
-                                  Map<Integer, String> oldRowToKey,
-                                  Map<String, Integer> newKeyToRowMap) {
-
+    private static String rewriteFormula(String formula,
+                                         Map<Integer, String> oldRowToKey,
+                                         Map<String, Integer> newKeyToRowMap) {
         Matcher matcher = CELL_REF_PATTERN.matcher(formula);
         StringBuffer sb = new StringBuffer();
 
@@ -204,19 +236,29 @@ public class ReconcilerService {
 
 ---
 
-## 🔑 What Changed
+## 🔧 Step 4: Usage Example
 
-* `newKeyToRowMap` built during reconciliation (key → new row number).
-* After reconciliation, we call `updateFormulas(...)`.
-* Formula cells referencing old rows get updated to new rows using `rewriteFormula`.
-* All logic stays inside `ReconcilerService`.
+```java
+try (FileInputStream fis = new FileInputStream("input.xlsx");
+     Workbook workbook = new XSSFWorkbook(fis)) {
+
+    // Read excelByKey, excelAllColumns from workbook...
+    ReconcileResult result = reconcilerService.reconcile(
+        db2Rows, excelByKey, excelAllColumns, "ID"
+    );
+
+    // Update formulas using the reconciliation map
+    FormulaUpdater.updateFormulas(workbook, "sheet1", "ID", result.getNewKeyToRowMap());
+
+    // Write output
+    try (FileOutputStream fos = new FileOutputStream("output.xlsx")) {
+        workbook.write(fos);
+    }
+}
+```
 
 ---
 
-⚠️ Currently, this supports **simple A1-style references**. If your formulas also use:
+✅ Now reconciliation (data comparison) and formula adjustment are **fully decoupled**.
 
-* `$A$1` (absolute refs),
-* ranges like `A1:A10`,
-  we need to extend the regex and handling.
-
-👉 Do you want me to extend this version to handle **absolute references and ranges** as well, so it’s more robust?
+👉 Do you also want me to extend `FormulaUpdater` to handle **absolute references (`$A$1`) and ranges (`A1:A10`)**, or keep it simple with only single-cell references for now?
