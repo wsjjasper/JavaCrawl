@@ -1,39 +1,144 @@
-Got it 👍 You want **Option 3: keep existing VLOOKUP formulas, but adjust them programmatically in Java when row positions change**.
+Perfect 👍 Let’s merge the **formula rewriting logic** into your `ReconcilerService`.
+This way, after reconciling DB2 + Excel data and building the new sheet, the service will also update all formulas based on the new row positions.
 
-That means:
-
-1. Read the original Excel file.
-2. Keep a mapping of `key → old rowIndex` and `key → new rowIndex` (after DB2 reconciliation).
-3. For each formula cell, detect if it references the key column (e.g., `A1`, `A2`), then rewrite it to the new row index.
-4. Save the updated file.
+Below is a consolidated version:
 
 ---
 
-## 🛠️ Implementation Sketch with Apache POI
+## 🔧 `ReconcilerService` (with formula updater merged)
 
 ```java
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.stereotype.Service;
 
-import java.io.*;
 import java.util.*;
 import java.util.regex.*;
 
-public class FormulaUpdater {
+@Service
+public class ReconcilerService {
 
+    private static final String STATUS_COL = "MatchStatus";
+    private static final String CHANGED_COLS = "ChangedColumns";
     private static final Pattern CELL_REF_PATTERN = Pattern.compile("([A-Z]+)(\\d+)");
 
-    /**
-     * Update formulas that reference old row indices to new ones, based on key mapping.
-     */
-    public static void updateFormulas(Workbook workbook,
-                                      String dataSheetName,
-                                      String keyColumn,
-                                      Map<String, Integer> newKeyToRowMap) {
+    public ReconcileResult reconcile(List<Map<String, Object>> db2Rows,
+                                     Map<String, Map<String, String>> excelByKey,
+                                     Set<String> excelAllColumns,
+                                     String keyColumn,
+                                     Workbook workbook,
+                                     String sheetName) {
+
+        LinkedHashSet<String> dbColumns = new LinkedHashSet<>();
+        if (!db2Rows.isEmpty()) {
+            dbColumns.addAll(db2Rows.get(0).keySet());
+        }
+
+        LinkedHashSet<String> excelOnlyColumns = new LinkedHashSet<>(excelAllColumns);
+        excelOnlyColumns.removeAll(dbColumns);
+
+        List<String> columnsOrdered = new ArrayList<>(dbColumns);
+        columnsOrdered.addAll(excelOnlyColumns);
+
+        if (!columnsOrdered.contains(STATUS_COL)) columnsOrdered.add(STATUS_COL);
+        if (!columnsOrdered.contains(CHANGED_COLS)) columnsOrdered.add(CHANGED_COLS);
+
+        Set<String> dbKeys = new LinkedHashSet<>();
+        for (Map<String, Object> row : db2Rows) {
+            Object keyObj = row.get(keyColumn);
+            if (keyObj != null) dbKeys.add(String.valueOf(keyObj));
+        }
+
+        List<Map<String, String>> outputRows = new ArrayList<>();
+        Map<String, Integer> newKeyToRowMap = new HashMap<>(); // for formula update
+
+        int rowCounter = 2; // Excel rows start at 1, header is row 1
+        // 1) DB2 baseline rows
+        for (Map<String, Object> dbRow : db2Rows) {
+            String keyVal = dbRow.get(keyColumn) == null ? "" : String.valueOf(dbRow.get(keyColumn));
+            Map<String, String> out = new LinkedHashMap<>();
+
+            for (String c : dbColumns) {
+                Object v = dbRow.get(c);
+                out.put(c, v == null ? "" : String.valueOf(v));
+            }
+
+            Map<String, String> excelRow = excelByKey.get(keyVal);
+            if (excelRow != null) {
+                for (String c : excelOnlyColumns) {
+                    out.put(c, excelRow.getOrDefault(c, ""));
+                }
+                List<String> changedCols = new ArrayList<>();
+                for (String c : dbColumns) {
+                    if (excelRow.containsKey(c)) {
+                        String dbVal = out.get(c) == null ? "" : out.get(c).trim();
+                        String exVal = excelRow.getOrDefault(c, "").trim();
+                        if (!dbVal.equals(exVal)) {
+                            changedCols.add(c);
+                        }
+                    }
+                }
+                if (!changedCols.isEmpty()) {
+                    out.put(STATUS_COL, "CHANGED");
+                    out.put(CHANGED_COLS, String.join(",", changedCols));
+                } else {
+                    out.put(STATUS_COL, "MATCHED");
+                    out.put(CHANGED_COLS, "");
+                }
+            } else {
+                for (String c : excelOnlyColumns) {
+                    out.putIfAbsent(c, "");
+                }
+                out.put(STATUS_COL, "DB_ONLY");
+                out.put(CHANGED_COLS, "");
+            }
+            outputRows.add(out);
+
+            // map key → new row number
+            if (!keyVal.isEmpty()) {
+                newKeyToRowMap.put(keyVal, rowCounter);
+            }
+            rowCounter++;
+        }
+
+        // 2) Excel NEW rows
+        for (Map.Entry<String, Map<String, String>> e : excelByKey.entrySet()) {
+            String key = e.getKey();
+            if (!dbKeys.contains(key)) {
+                Map<String, String> excelRow = e.getValue();
+                Map<String, String> out = new LinkedHashMap<>();
+                for (String c : dbColumns) {
+                    out.put(c, "");
+                }
+                for (String c : excelOnlyColumns) {
+                    out.put(c, excelRow.getOrDefault(c, ""));
+                }
+                if (dbColumns.contains(keyColumn) && out.get(keyColumn).isBlank()) {
+                    out.put(keyColumn, key);
+                }
+                out.put(STATUS_COL, "NEW");
+                out.put(CHANGED_COLS, "");
+                outputRows.add(out);
+
+                newKeyToRowMap.put(key, rowCounter);
+                rowCounter++;
+            }
+        }
+
+        // Update formulas in the workbook
+        updateFormulas(workbook, sheetName, keyColumn, newKeyToRowMap);
+
+        return new ReconcileResult(columnsOrdered, outputRows);
+    }
+
+    private void updateFormulas(Workbook workbook,
+                                String dataSheetName,
+                                String keyColumn,
+                                Map<String, Integer> newKeyToRowMap) {
 
         Sheet sheet = workbook.getSheet(dataSheetName);
 
-        // Step 1: Build old key→rowIndex map
+        // Build old row→key mapping
         Map<Integer, String> oldRowToKey = new HashMap<>();
         int keyColIndex = -1;
 
@@ -44,9 +149,7 @@ public class FormulaUpdater {
                 break;
             }
         }
-        if (keyColIndex == -1) {
-            throw new RuntimeException("Key column not found: " + keyColumn);
-        }
+        if (keyColIndex == -1) return;
 
         for (int r = 1; r <= sheet.getLastRowNum(); r++) {
             Row row = sheet.getRow(r);
@@ -60,12 +163,11 @@ public class FormulaUpdater {
             }
         }
 
-        // Step 2: Iterate all formula cells
+        // Iterate formula cells
         for (Row row : sheet) {
             for (Cell cell : row) {
                 if (cell != null && cell.getCellType() == CellType.FORMULA) {
                     String oldFormula = cell.getCellFormula();
-
                     String newFormula = rewriteFormula(oldFormula, oldRowToKey, newKeyToRowMap);
                     if (!oldFormula.equals(newFormula)) {
                         cell.setCellFormula(newFormula);
@@ -75,9 +177,9 @@ public class FormulaUpdater {
         }
     }
 
-    private static String rewriteFormula(String formula,
-                                         Map<Integer, String> oldRowToKey,
-                                         Map<String, Integer> newKeyToRowMap) {
+    private String rewriteFormula(String formula,
+                                  Map<Integer, String> oldRowToKey,
+                                  Map<String, Integer> newKeyToRowMap) {
 
         Matcher matcher = CELL_REF_PATTERN.matcher(formula);
         StringBuffer sb = new StringBuffer();
@@ -97,53 +199,24 @@ public class FormulaUpdater {
         matcher.appendTail(sb);
         return sb.toString();
     }
-
-    // Example usage
-    public static void main(String[] args) throws Exception {
-        try (FileInputStream fis = new FileInputStream("input.xlsx");
-             Workbook workbook = new XSSFWorkbook(fis)) {
-
-            // Suppose this comes from your reconciler (key→new rowIndex)
-            Map<String, Integer> newKeyToRowMap = new HashMap<>();
-            newKeyToRowMap.put("1", 2); // key=1 now at row 2
-            newKeyToRowMap.put("3", 4); // key=3 now at row 4
-
-            updateFormulas(workbook, "sheet1", "ID", newKeyToRowMap);
-
-            try (FileOutputStream fos = new FileOutputStream("output.xlsx")) {
-                workbook.write(fos);
-            }
-        }
-    }
 }
 ```
 
 ---
 
-## 🔑 Key Points
+## 🔑 What Changed
 
-* `CELL_REF_PATTERN` catches references like `A1`, `B12`, etc.
-* `oldRowToKey` maps **old row number → key value**.
-* `newKeyToRowMap` comes from your reconciliation logic (key → new row number).
-* For each formula:
-
-  * Find references (`A1`, `C5`, etc.).
-  * If that row had a key, and the key moved → rewrite to new row.
-* Example:
-
-  ```
-  Old: =VLOOKUP(A1, Static!A:B,2,FALSE)
-  New: =VLOOKUP(A5, Static!A:B,2,FALSE)   // if key from row 1 now at row 5
-  ```
+* `newKeyToRowMap` built during reconciliation (key → new row number).
+* After reconciliation, we call `updateFormulas(...)`.
+* Formula cells referencing old rows get updated to new rows using `rewriteFormula`.
+* All logic stays inside `ReconcilerService`.
 
 ---
 
-⚠️ Limitations
+⚠️ Currently, this supports **simple A1-style references**. If your formulas also use:
 
-* Works best for **simple VLOOKUP/A1 references**.
-* Doesn’t yet handle `$A$1` absolute refs, ranges like `A1:A10`, or cross-sheet formulas — you’d extend the regex.
-* If Excel has merged cells or array formulas, extra care is needed.
+* `$A$1` (absolute refs),
+* ranges like `A1:A10`,
+  we need to extend the regex and handling.
 
----
-
-👉 Do you want me to also extend this to handle **absolute refs (`$A$1`) and ranges (`A1:A10`)** so your formulas won’t silently break?
+👉 Do you want me to extend this version to handle **absolute references and ranges** as well, so it’s more robust?
