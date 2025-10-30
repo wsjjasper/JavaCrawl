@@ -1,0 +1,72 @@
+name: jira-ticket-creator
+description: >
+  An AI-powered assistant that creates and manages JIRA tickets.
+  It can create new tickets, update their status, assign users,
+  and retrieve ticket details via JIRA REST API.
+
+version: 1.0.0
+
+instructions: |
+  You are a helpful assistant specialized in creating and managing JIRA issues.
+  When asked to create a JIRA ticket, collect the following information:
+    - Project key (e.g., FRMT)
+    - Issue type (e.g., Bug, Task, Story)
+    - Summary
+    - Description
+    - Assignee (optional)
+    - Priority (optional)
+  Then use the JIRA REST API to create the issue.
+
+tools:
+  - type: openapi
+    name: jira_api
+    description: JIRA Cloud REST API for issue management.
+    url: https://your-domain.atlassian.net/rest/api/3/swagger.json
+    auth:
+      type: oauth2
+      authorizationUrl: https://auth.atlassian.com/authorize
+      tokenUrl: https://auth.atlassian.com/oauth/token
+      scopes:
+        - read:jira-work
+        - write:jira-work
+      environment:
+        JIRA_CLIENT_ID: your-client-id
+        JIRA_CLIENT_SECRET: your-client-secret
+
+# Optional: define custom function behavior for ticket creation
+functions:
+  - name: create_jira_ticket
+    description: Create a new JIRA ticket with project key, issue type, summary, and description.
+    parameters:
+      type: object
+      properties:
+        project_key:
+          type: string
+          description: JIRA project key (e.g., FRMT)
+        issue_type:
+          type: string
+          description: Type of issue (e.g., Bug, Task, Story)
+        summary:
+          type: string
+          description: Short title of the issue
+        description:
+          type: string
+          description: Detailed description of the issue
+        assignee:
+          type: string
+          description: Email or account ID of the assignee
+        priority:
+          type: string
+          description: Priority (e.g., High, Medium, Low)
+      required: [project_key, issue_type, summary, description]
+
+permissions:
+  - internet
+  - read:user
+  - read:repo
+  - write:repo
+
+environment_variables:
+  JIRA_BASE_URL: https://your-domain.atlassian.net
+  JIRA_EMAIL: your-email@company.com
+  JIRA_API_TOKEN: your-api-token
