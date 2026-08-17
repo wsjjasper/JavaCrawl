@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 劳工节家庭旅行计划</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Global Progress Indicator -->
+    <div id="progress-container">
+        <div id="progress-bar"></div>
+        <div id="progress-text"></div>
+    </div>
+
+    <!-- Background Music Player -->
+    <audio id="bg-music" loop>
+        <source src="happy_music.mp3" type="audio/mpeg">
+    </audio>
+    <button id="music-btn" class="music-btn" aria-label="Play Music">
+        <!-- Play Icon -->
+        <svg id="music-icon-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:block;">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+        <!-- Pause Icon -->
+        <svg id="music-icon-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+            <rect x="6" y="4" width="4" height="16"></rect>
+            <rect x="14" y="4" width="4" height="16"></rect>
+        </svg>
+    </button>
+
+
+    <div class="presentation-container">
+        
+        <!-- ====================== SLIDE 1: COVER ====================== -->
+        <section class="slide slide-cover" id="slide-1" data-day="0" data-label="">
+            <div class="bg-image ken-burns" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Jim_Thorpe_Skyline.jpg/1920px-Jim_Thorpe_Skyline.jpg');"></div>
+            <div class="overlay-gradient-bottom"></div>
+            <div class="content align-center">
+                <h1 class="animate-fade-up">宾州自然与欢乐之旅</h1>
+                <p class="subtitle animate-fade-up delay-1">2026 劳工节家庭旅行计划 · 9月5日 - 9月8日</p>
+                <div class="family-info animate-fade-up delay-2">
+                    <span>👨 爸爸</span><span>👩 妈妈</span><span>👦 大儿子(12岁)</span><span>👶 小儿子(2.5岁)</span>
+                </div>
+                <div class="scroll-indicator animate-bounce delay-3">
+                    <p>向下滚动开始旅程</p>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================== SLIDE 2: DAY1 LGA提车 ====================== -->
+        <section class="slide slide-venue" id="slide-2" data-day="1" data-label="LGA 提车出发">
+            <div class="bg-image ken-burns" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Terminal_B_at_LaGuardia_Airport_%281%29.jpg/1920px-Terminal_B_at_LaGuardia_Airport_%281%29.jpg');"></div>
+            <div class="overlay-light"></div>
+            <div class="content layout-split">
+                <div class="text-panel animate-slide-right">
+                    <div class="day-badge">DAY 1</div>
+                    <h2>出发：纽约 LGA 机场提车</h2>
+                    <h3>📅 9月5日 · ⏰ 11:00 - 12:00</h3>
+                    <p class="desc">全家集合，前往 LaGuardia Airport 提取在 AVIS 预定的 SUV，装载行李，准备开启旅行。</p>
+                    <div class="alert tip animate-fade-up delay-1">
+                        <strong>⏱️ 时间提醒:</strong> 预定的是12点提车，取完车回 Forest Hills 接家人并出发，预计13点左右才能真正上路。
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================== SLIDE 3: DAY1 开车去Jim Thorpe ====================== -->
+        <section class="slide slide-driving" id="slide-3" data-day="1" data-label="驶向 Jim Thorpe">
+            <div class="map-hero">
+                <iframe src="https://www.google.com/maps/embed/v1/directions?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&origin=Forest+Hills,+Queens,+NY&destination=Jim+Thorpe,+PA&mode=driving" allowfullscreen></iframe>
+            </div>
+            <div class="driving-info-panel animate-slide-left">
+                <div class="day-badge">DAY 1</div>
+                <h2>🚗 Forest Hills → Jim Thorpe</h2>
+                <h3>📅 9月5日 · ⏰ 12:30 - 15:30</h3>
+                <p class="desc">离开纽约，向宾夕法尼亚州群山进发。全程约 2.5 - 3 小时。</p>
+                <div class="alert info">
+                    <strong>🎶 车内时光:</strong> 准备好全家都喜欢的音乐和零食，2.5 岁的弟弟可以在车上小睡。
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================== SLIDE 4: DAY1 观光火车 ====================== -->
+        <section class="slide slide-venue" id="slide-4" data-day="1" data-label="Lehigh Gorge 观光火车">
+            <div class="bg-image ken-burns" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/20150901_30_Lehigh_Gorge_Scenic_Rwy.%2C_Jim_Thorpe%2C_Pennsylvania.jpg/1920px-20150901_30_Lehigh_Gorge_Scenic_Rwy.%2C_Jim_Thorpe%2C_Pennsylvania.jpg');"></div>
+            <div class="overlay-light"></div>
+            <div class="content layout-split">
+                <div class="text-panel animate-slide-right">
+                    <div class="day-badge">DAY 1</div>
+                    <h2>复古铁道：Lehigh Gorge 观光火车</h2>
+                    <h3>📅 9月5日 · ⏰ 16:30 - 18:00</h3>
+                    <p class="desc">乘坐经典的复古火车穿梭于 Lehigh 峡谷之间。全家坐着欣赏风景，对12岁和2.5岁的孩子都非常友好。</p>
+                    <div class="alert warning animate-fade-up delay-1">
+                        <strong>🎟️ 必须提前购票:</strong> 节假日车票紧俏，下午班次可能售罄，务必提前在官网购票确认班次。
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================== SLIDE 5: DAY1 Jim Thorpe 小镇 ====================== -->
+        <section class="slide slide-venue" id="slide-5" data-day="1" data-label="Jim Thorpe 小镇">
+            <div class="bg-image ken-burns" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Jim_Thorpe_Broadway_Buildings_3008px.jpg/1920px-Jim_Thorpe_Broadway_Buildings_3008px.jpg');"></div>
+            <div class="overlay-light"></div>
+            <div class="content layout-split right">
+                <div class="text-panel animate-slide-left">
+                    <div class="day-badge">DAY 1</div>
+                    <h2>维多利亚风情：Jim Thorpe 小镇</h2>
+                    <h3>📅 9月5日 · ⏰ 18:00 - 19:30</h3>
+                    <p class="desc">Jim Thorpe 被誉为 "美国的瑞士"，拥有迷人的维多利亚时代建筑。在这里闲逛、购物并解决晚餐。</p>
+                    <div class="alert tip animate-fade-up delay-1">
+                        <strong>🍽️ 餐饮提示:</strong> 节假日热门餐厅等位可能较长，建议提前在 Yelp 或 Google 上预约。
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================== SLIDE 6: DAY1 前往酒店 ====================== -->
+        <section class="slide slide-driving" id="slide-6" data-day="1" data-label="前往 Barnesville 酒店">
+            <div class="map-hero">
+                <iframe src="https://www.google.com/maps/embed/v1/directions?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&origin=Jim+Thorpe,+PA&destination=Comfort+Inn+%26+Suites+Barnesville+Frackville,+PA&mode=driving" allowfullscreen></iframe>
+            </div>
+            <div class="hotel-pip animate-fade-up">
+                <img src="Comfort Inn & Suites Barnesville - Frackville.jpg" alt="Comfort Inn & Suites Barnesville">
+                <div class="hotel-pip-label">Comfort Inn & Suites Barnesville</div>
+            </div>
+            <div class="driving-info-panel animate-slide-left">
+                <div class="day-badge">DAY 1</div>
+                <h2>🏨 前往 Barnesville 酒店</h2>
+                <h3>📅 9月5日 · ⏰ 19:30 - 20:00</h3>
+                <p class="desc">驱车 30 分钟抵达 Comfort Inn & Suites Barnesville - Frackville。办理入住，洗澡休息，为明天游乐园之旅储备体力。</p>
+                <div class="cost-tag">💰 住宿费用: $204.78</div>
+            </div>
+        </section>
+
+        <!-- ====================== SLIDE 7: DAY2 前往游乐园 ====================== -->
+        <section class="slide slide-driving" id="slide-7" data-day="2" data-label="前往 Knoebels 游乐园">
+            <div class="map-hero">
+                <iframe src="https://www.google.com/maps/embed/v1/directions?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&origin=Comfort+Inn+%26+Suites+Barnesville+Frackville,+PA&destination=Knoebels+Amusement+Resort,+Elysburg,+PA&mode=driving" allowfullscreen></iframe>
+            </div>
+            <div class="driving-info-panel animate-slide-left">
+                <div class="day-badge day2">DAY 2</div>
+                <h2>🚗 前往 Knoebels 游乐园</h2>
+                <h3>📅 9月6日 · ⏰ 12:30 - 13:00</h3>
+                <p class="desc">睡到自然醒，享用酒店早餐后出发。仅需半小时，抵达全美顶级的家庭免门票游乐园。</p>
+            </div>
+        </section>
+
+        <!-- ====================== SLIDE 8: DAY2 Knoebels ====================== -->
+        <section class="slide slide-venue" id="slide-8" data-day="2" data-label="Knoebels 森林游乐园">
+            <div class="bg-image ken-burns" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Knoebels_Phoenix.JPG/1920px-Knoebels_Phoenix.JPG');"></div>
+            <div class="overlay-light"></div>
+            <div class="content knoebels-layout">
+                <div class="text-panel animate-slide-right">
+                    <div class="day-badge day2">DAY 2</div>
+                    <h2>森林奇境：Knoebels 游乐园</h2>
+                    <h3>📅 9月6日 · ⏰ 13:00 - 20:00</h3>
+                    <p class="desc">隐藏在森林中的老派游乐园，<b>免门票</b>，按项目刷票。哥哥可以挑战经典木质过山车 Phoenix，弟弟可以玩温和设施。午餐和晚餐直接在园内享用获奖美食。</p>
+                    <div class="alert info animate-fade-up delay-1">
+                        <strong>🧸 温馨提示:</strong> 7 小时的游玩对 2.5 岁幼儿是个挑战。园内树荫浓密，务必带上<b>婴儿推车</b>方便随时小憩。
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================== SLIDE 9: DAY2 前往酒店 ====================== -->
+        <section class="slide slide-driving" id="slide-9" data-day="2" data-label="前往 Bloomsburg 酒店">
+            <div class="map-hero">
+                <iframe src="https://www.google.com/maps/embed/v1/directions?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&origin=Knoebels+Amusement+Resort,+Elysburg,+PA&destination=Comfort+Suites+Bloomsburg,+PA&mode=driving" allowfullscreen></iframe>
+            </div>
+            <div class="hotel-pip animate-fade-up">
+                <img src="Comfort Suites Bloomsburg.jpg" alt="Comfort Suites Bloomsburg">
+                <div class="hotel-pip-label">Comfort Suites Bloomsburg</div>
+            </div>
+            <div class="driving-info-panel animate-slide-left">
+                <div class="day-badge day2">DAY 2</div>
+                <h2>🏨 前往 Bloomsburg 酒店</h2>
+                <h3>📅 9月6日 · ⏰ 20:00 - 21:00</h3>
+                <p class="desc">结束一天的狂欢，驱车前往 Comfort Suites Bloomsburg。距离不远，全家可以迅速休息。</p>
+            </div>
+        </section>
+
+        <!-- ====================== SLIDE 10: DAY3 前往瀑布 ====================== -->
+        <section class="slide slide-driving" id="slide-10" data-day="3" data-label="前往 Ricketts Glen">
+            <div class="map-hero">
+                <iframe src="https://www.google.com/maps/embed/v1/directions?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&origin=Comfort+Suites+Bloomsburg,+PA&destination=Ricketts+Glen+State+Park,+PA&mode=driving" allowfullscreen></iframe>
+            </div>
+            <div class="driving-info-panel animate-slide-left">
+                <div class="day-badge day3">DAY 3</div>
+                <h2>🚗 前往 Ricketts Glen 瀑布</h2>
+                <h3>📅 9月7日 · ⏰ 09:30 - 10:30</h3>
+                <p class="desc">一早出发，前往本次旅行的自然奇观 Ricketts Glen State Park。车程约 1 小时。</p>
+            </div>
+        </section>
+
+        <!-- ====================== SLIDE 11: DAY3 瀑布 ====================== -->
+        <section class="slide slide-venue" id="slide-11" data-day="3" data-label="Ricketts Glen 瀑布群">
+            <div class="bg-image ken-burns" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Adams_Falls_%281%29_%288213883793%29.jpg/1920px-Adams_Falls_%281%29_%288213883793%29.jpg');"></div>
+            <div class="overlay-light"></div>
+            <div class="content layout-split right">
+                <div class="text-panel animate-slide-left">
+                    <div class="day-badge day3">DAY 3</div>
+                    <h2>深林水幕：Ricketts Glen 瀑布群</h2>
+                    <h3>📅 9月7日 · ⏰ 10:30 - 15:00</h3>
+                    <p class="desc">公园拥有22条命名瀑布，是宾夕法尼亚州最壮观的自然景观之一。</p>
+                    <div class="alert warning animate-fade-up delay-1">
+                        <strong>⚠️ 安全警告:</strong> 著名的瀑布步道 (Falls Trail) 极其陡峭且湿滑，<b>绝对无法使用婴儿推车，带 2.5 岁幼童走此步道极其危险！</b>
+                    </div>
+                    <div class="alert tip animate-fade-up delay-2 mt-2">
+                        <strong>🌟 替代方案:</strong> 带弟弟去平缓的 <b>Lake Jean 沙滩</b>玩水野餐，或者只走到入口处最平缓的 <b>Adams Falls</b>（图中所示）即可。
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================== SLIDE 12: DAY3 前往 Stroudsburg ====================== -->
+        <section class="slide slide-driving" id="slide-12" data-day="3" data-label="前往 Stroudsburg">
+            <div class="map-hero">
+                <iframe src="https://www.google.com/maps/embed/v1/directions?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&origin=Ricketts+Glen+State+Park,+PA&destination=Stroudsburg,+PA&mode=driving" allowfullscreen></iframe>
+            </div>
+            <div class="driving-info-panel animate-slide-left">
+                <div class="day-badge day3">DAY 3</div>
+                <h2>🚗 踏上归途：返程第一段</h2>
+                <h3>📅 9月7日 · ⏰ 15:00 - 17:00</h3>
+                <p class="desc">开始返程。在 PQ Stroudsburg 附近做中途停留，进行休整和晚餐。此时可能已经出现假期返程车流。</p>
+                <div class="cost-tag">💰 晚餐预算: $145.63</div>
+            </div>
+        </section>
+
+        <!-- ====================== SLIDE 13: DAY3 晚餐 ====================== -->
+        <section class="slide slide-venue" id="slide-13" data-day="3" data-label="Stroudsburg 晚餐">
+            <div class="bg-image ken-burns" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Flickr_-_Nicholas_T_-_Stroudsburg_PA_Downtown.jpg/1920px-Flickr_-_Nicholas_T_-_Stroudsburg_PA_Downtown.jpg');"></div>
+            <div class="overlay-light"></div>
+            <div class="content layout-split">
+                <div class="text-panel animate-slide-right">
+                    <div class="day-badge day3">DAY 3</div>
+                    <h2>路上的慰藉：Stroudsburg 晚餐</h2>
+                    <h3>📅 9月7日 · ⏰ 17:00 - 19:00</h3>
+                    <p class="desc">在返程中途坐下来好好吃一顿晚餐，给大人和孩子们都补充体力。Stroudsburg 是 Pocono Mountains 地区的旅游小镇，餐饮选择丰富。</p>
+                    <div class="alert tip animate-fade-up delay-1">
+                        <strong>🍽️ 建议:</strong> Stroudsburg 的 Main Street 上有不少不错的餐厅。节假日人多，建议提前用 Google Maps 查看营业时间和等位情况。
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================== SLIDE 14: DAY3 返回纽约 ====================== -->
+        <section class="slide slide-driving" id="slide-14" data-day="3" data-label="夜车返回纽约">
+            <div class="map-hero">
+                <iframe src="https://www.google.com/maps/embed/v1/directions?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&origin=Stroudsburg,+PA&destination=Forest+Hills,+Queens,+NY&mode=driving" allowfullscreen></iframe>
+            </div>
+            <div class="driving-info-panel animate-slide-left">
+                <div class="day-badge day3">DAY 3</div>
+                <h2>🚗 夜车返回纽约</h2>
+                <h3>📅 9月7日 · ⏰ 19:00 - 21:00+</h3>
+                <p class="desc">最后的冲刺阶段。孩子们可能已经在后座入睡，驾驶员需保持集中。</p>
+                <div class="alert warning">
+                    <strong>🚗 堵车预警:</strong> 劳工节假期最后一天晚上，80号公路及进纽约隧道通常<b>极端拥堵</b>。2小时预估车程可能延长到3小时以上。请实时关注 Google Maps 路况。
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================== SLIDE 15: DAY4 还车 & 结束 ====================== -->
+        <section class="slide slide-driving" id="slide-15" data-day="4" data-label="还车 · 旅途结束">
+            <div class="map-hero">
+                <iframe src="https://www.google.com/maps/embed/v1/directions?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&origin=Forest+Hills,+Queens,+NY&destination=LaGuardia+Airport,+NY&mode=driving" allowfullscreen></iframe>
+            </div>
+            <div class="driving-info-panel finale animate-slide-left">
+                <div class="day-badge day4">DAY 4</div>
+                <h2>✅ 平安抵达，完美收官</h2>
+                <h3>📅 9月8日 · ⏰ 11:00 - 11:30 · LGA 还车</h3>
+                <p class="desc">将 SUV 归还 AVIS，旅程正式结束。</p>
+                <div class="summary-section">
+                    <h4>旅行速览</h4>
+                    <div class="summary-items">
+                        <div class="summary-item"><span class="emoji">🚙</span><span>总租车费用: $430.36</span></div>
+                        <div class="summary-item"><span class="emoji">🏨</span><span>2 晚住宿: ~$205+</span></div>
+                        <div class="summary-item"><span class="emoji">🎢</span><span>Knoebels 免门票</span></div>
+                        <div class="summary-item"><span class="emoji">🚂</span><span>观光火车: 待购票</span></div>
+                    </div>
+                </div>
+                <p class="finale-text">祝全家度过一个难忘的劳工节假期！🎉</p>
+            </div>
+        </section>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
